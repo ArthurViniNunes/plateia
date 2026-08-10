@@ -28,6 +28,7 @@ jobs:
           POSTGRES_USER: plateia_test
           POSTGRES_PASSWORD: plateia_test_password
           POSTGRES_DB: plateia_test
+          JWT_SECRET: "ci-only-secret-not-for-production-at-least-32-characters"
         ports:
           - 5432:5432
         options: >-

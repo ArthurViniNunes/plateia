@@ -29,6 +29,7 @@ Este diretório reúne os Architecture Decision Records (ADRs) do Plateia. O obj
 | [0007](./0007-usar-ticketmaster-sem-catalogo-de-contingencia.md) | Usar Ticketmaster sem catálogo de contingência | Aceito |
 | [0008](./0008-adotar-mui-com-identidade-editorial.md) | Adotar MUI com identidade editorial própria | Aceito |
 | [0009](./0009-validar-configuracao-e-falhar-rapidamente.md) | Validar configuração e falhar rapidamente | Aceito |
+| [0010](./0010-adotar-jwt-e-bcrypt-na-autenticacao.md) | Adotar JWT e bcrypt na autenticação | Aceito |
 
 ## Decisões ainda pendentes
 
