@@ -1,0 +1,21 @@
+{
+  "name": "plateia",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plataforma de eventos e ingressos desenvolvida para o Desafio Elite Dev da Verzel.",
+  "author": "Arthur Vinicius Carneiro Nunes",
+  "license": "MIT",
+  "packageManager": "npm@11.16.0",
+  "workspaces": [
+    "apps/api",
+    "apps/web",
+    "packages/contracts"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}
