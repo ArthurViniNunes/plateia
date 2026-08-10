@@ -28,6 +28,7 @@ Este diretório reúne os Architecture Decision Records (ADRs) do Plateia. O obj
 | [0006](./0006-bloquear-assentos-por-dez-minutos.md) | Bloquear assentos por dez minutos | Aceito |
 | [0007](./0007-usar-ticketmaster-sem-catalogo-de-contingencia.md) | Usar Ticketmaster sem catálogo de contingência | Aceito |
 | [0008](./0008-adotar-mui-com-identidade-editorial.md) | Adotar MUI com identidade editorial própria | Aceito |
+| [0009](./0009-validar-configuracao-e-falhar-rapidamente.md) | Validar configuração e falhar rapidamente | Aceito |
 
 ## Decisões ainda pendentes
 
