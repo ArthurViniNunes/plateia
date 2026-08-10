@@ -1,0 +1,45 @@
+name: plateia
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+    ports:
+      - "${POSTGRES_PORT:?POSTGRES_PORT is required}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  postgres-test:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_TEST_USER:?POSTGRES_TEST_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_TEST_PASSWORD:?POSTGRES_TEST_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_TEST_DB:?POSTGRES_TEST_DB is required}
+    ports:
+      - "${POSTGRES_TEST_PORT:?POSTGRES_TEST_PORT is required}:5432"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  postgres-data:
