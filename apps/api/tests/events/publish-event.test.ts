@@ -6,6 +6,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../../src/app.js";
 import type { CatalogClient } from "../../src/catalog/ticketmaster-client.js";
 import { prisma } from "../../src/database/prisma.js";
+import { resetDatabase } from "../helpers/reset-database.js";
 
 const jwtSecret = process.env.JWT_SECRET;
 
@@ -42,8 +43,7 @@ let eventId: string;
 
 describe("POST /api/events/:eventId/publish", () => {
   beforeEach(async () => {
-    await prisma.event.deleteMany();
-    await prisma.user.deleteMany();
+    await resetDatabase();
 
     const organizer = await prisma.user.create({
       data: {

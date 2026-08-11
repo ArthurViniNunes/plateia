@@ -4,9 +4,11 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { seedUsers } from "../../prisma/seed-users.js";
 import { prisma } from "../../src/database/prisma.js";
 
+import { resetDatabase } from "../helpers/reset-database.js";
+
 describe("seedUsers", () => {
   beforeEach(async () => {
-    await prisma.user.deleteMany();
+    await resetDatabase();
   });
 
   afterAll(async () => {

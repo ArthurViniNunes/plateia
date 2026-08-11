@@ -36,6 +36,10 @@ Adotar ciclos TDD de teste vermelho, implementação mínima, teste verde e refa
 
 Os testes de integração da API utilizarão o PostgreSQL exclusivo de testes. Enquanto compartilharem o mesmo banco e realizarem limpeza explícita dos dados, os arquivos de teste serão executados sequencialmente com `fileParallelism: false`.
 
+A limpeza do banco será centralizada em um helper compartilhado pelos testes de integração. O helper removerá as entidades respeitando a ordem inversa de suas dependências relacionais. No estado atual do modelo, eventos serão removidos antes dos usuários; os assentos serão eliminados em cascata junto com o evento.
+
+Essa centralização evita que cada suíte mantenha uma estratégia própria e reduz o risco de falhas por restrições de chave estrangeira. O helper deverá evoluir sempre que reservas, ingressos ou outras entidades relacionadas forem adicionadas.
+
 Essa escolha evita condições de corrida em que a preparação de um arquivo remove dados necessários para outro. A execução paralela poderá ser retomada caso cada worker receba um schema ou banco isolado.
 
 Usar:
@@ -71,6 +75,7 @@ O primeiro contrato criado foi `GET /health`, com resposta determinística `{ "s
 - simular apenas fronteiras externas, como Ticketmaster;
 - usar o banco real nos comportamentos que dependem dele;
 - registrar exceções conscientes ao ciclo normal;
+- centralizar a limpeza relacional do banco de testes e respeitar a ordem das dependências;
 - não usar percentual de cobertura como substituto de uma análise de risco.
 
 ## Gatilhos para reconsideração

@@ -6,7 +6,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createApp } from "../../src/app.js";
 import { prisma } from "../../src/database/prisma.js";
-
+import { resetDatabase } from "../helpers/reset-database.js";
 const jwtSecret = process.env.JWT_SECRET;
 
 if (!jwtSecret) {
@@ -34,7 +34,7 @@ const loginResponseSchema = z
 
 describe("POST /api/auth/login", () => {
   beforeEach(async () => {
-    await prisma.user.deleteMany();
+    await resetDatabase();
 
     await prisma.user.create({
       data: {

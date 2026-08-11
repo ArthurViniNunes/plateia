@@ -6,6 +6,7 @@ import { SignJWT } from "jose";
 
 import { createApp } from "../../src/app.js";
 import { prisma } from "../../src/database/prisma.js";
+import { resetDatabase } from "../helpers/reset-database.js";
 
 const jwtSecret = process.env.JWT_SECRET;
 
@@ -33,7 +34,7 @@ const meResponseSchema = z
 
 describe("GET /api/auth/me", () => {
   beforeEach(async () => {
-    await prisma.user.deleteMany();
+    await resetDatabase();
 
     await prisma.user.create({
       data: {

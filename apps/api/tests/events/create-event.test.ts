@@ -9,6 +9,7 @@ import {
   TicketmasterUnavailableError,
   type CatalogClient,
 } from "../../src/catalog/ticketmaster-client.js";
+import { resetDatabase } from "../helpers/reset-database.js";
 import { prisma } from "../../src/database/prisma.js";
 
 const jwtSecret = process.env.JWT_SECRET;
@@ -79,8 +80,7 @@ function createValidEventRequest() {
 
 describe("POST /api/events", () => {
   beforeEach(async () => {
-    await prisma.event.deleteMany();
-    await prisma.user.deleteMany();
+    await resetDatabase();
 
     await prisma.user.create({
       data: {

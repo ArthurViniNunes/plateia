@@ -446,6 +446,42 @@ Eventos fora de `DRAFT` ou que não satisfaçam as condições de publicação r
 
 A alteração de estado utilizará atualização condicional. Em tentativas concorrentes, somente uma publicação poderá ser concluída; as demais receberão conflito.
 
+### Consulta pública de eventos
+
+A consulta aos eventos persistidos não dependerá da disponibilidade da Ticketmaster e não exigirá autenticação.
+
+A listagem utilizará `GET /api/events` e retornará exclusivamente eventos:
+
+- com estado `PUBLISHED`;
+- cuja data e horário ainda estejam no futuro.
+
+Os eventos serão ordenados pela data de início em ordem crescente. O identificador será utilizado como segundo critério para manter uma ordenação determinística quando dois eventos começarem no mesmo instante.
+
+A listagem aceitará:
+
+- `search`: busca parcial pelo título, sem diferenciar maiúsculas e minúsculas;
+- `city`: correspondência exata da cidade, sem diferenciar maiúsculas e minúsculas;
+- `startsFrom`: data inicial inclusiva;
+- `startsTo`: data final inclusiva;
+- `page`: página solicitada, com valor padrão 1;
+- `limit`: quantidade por página, com valor padrão 12 e máximo 50.
+
+Datas sem horário serão interpretadas em UTC. `startsFrom` representará o início do dia, às `00:00:00.000`, enquanto `startsTo` representará seu final, às `23:59:59.999`.
+
+A resposta utilizará os campos `data` e `pagination`. A paginação informará página atual, limite, quantidade total de registros e quantidade total de páginas. Quando não houver resultados, `total` e `totalPages` serão iguais a zero.
+
+Parâmetros inválidos, paginação fora dos limites ou intervalo de datas invertido responderão `400 Bad Request` com o código `VALIDATION_ERROR` e a mensagem `Invalid query parameters`.
+
+O detalhe utilizará `GET /api/events/:eventId` e também será público. Eventos inexistentes, identificadores malformados, rascunhos, eventos cancelados ou eventos cuja sessão já tenha ocorrido responderão de forma indistinguível com `404 EVENT_NOT_FOUND`.
+
+A resposta de detalhe utilizará o mesmo formato básico do evento apresentado na listagem e acrescentará o mapa de assentos no campo `rows`.
+
+As fileiras serão ordenadas alfabeticamente, e seus assentos serão ordenados numericamente. Cada assento apresentará seu identificador, número e estado calculado.
+
+Enquanto reservas e ingressos ainda não estiverem modelados, todos os assentos serão apresentados provisoriamente como `AVAILABLE`. Esse valor não será persistido no assento. No ciclo seguinte, o estado será derivado de bloqueios temporários, pagamentos e ingressos.
+
+A capacidade continuará sendo derivada da quantidade de assentos persistidos.
+
 ## Referências
 
 - [Ticketmaster Discovery API v2](https://developer.ticketmaster.com/products-and-docs/apis/discovery-api/v2/)

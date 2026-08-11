@@ -6,6 +6,8 @@ import { createApp } from "../../src/app.js";
 import { prisma } from "../../src/database/prisma.js";
 import { z } from "zod";
 
+import { resetDatabase } from "../helpers/reset-database.js";
+
 const app = createApp({
   corsOrigin: "http://localhost:5173",
   jwtSecret: "local-test-secret-with-at-least-32-characters",
@@ -22,7 +24,7 @@ const registrationResponseSchema = z
 
 describe("POST /api/auth/register", () => {
   beforeEach(async () => {
-    await prisma.user.deleteMany();
+    await resetDatabase();
   });
 
   afterAll(async () => {
