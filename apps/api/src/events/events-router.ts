@@ -1,4 +1,11 @@
 import { Router } from "express";
+import { z } from "zod";
+
+import {
+  EventCannotBePublishedError,
+  EventNotFoundError,
+} from "./event-errors.js";
+import { publishEvent } from "./publish-event.js";
 
 import { createAuthenticationMiddleware } from "../auth/authentication-middleware.js";
 import { requireRoles } from "../auth/authorization-middleware.js";
@@ -77,6 +84,67 @@ export function createEventsRouter({
             error: {
               code: "TICKETMASTER_UNAVAILABLE",
               message: "Ticketmaster catalog is unavailable",
+            },
+          });
+          return;
+        }
+
+        throw error;
+      }
+    },
+  );
+
+  eventsRouter.post(
+    "/:eventId/publish",
+    authenticationMiddleware,
+    requireRoles("ORGANIZER"),
+    async (request, response) => {
+      const user = request.authenticatedUser;
+      const eventIdResult = z.uuid().safeParse(request.params.eventId);
+
+      if (!user) {
+        response.status(401).json({
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Authentication required",
+          },
+        });
+        return;
+      }
+
+      if (!eventIdResult.success) {
+        response.status(404).json({
+          error: {
+            code: "EVENT_NOT_FOUND",
+            message: "Event not found",
+          },
+        });
+        return;
+      }
+
+      try {
+        const event = await publishEvent({
+          eventId: eventIdResult.data,
+          organizerId: user.id,
+        });
+
+        response.status(200).json(event);
+      } catch (error: unknown) {
+        if (error instanceof EventNotFoundError) {
+          response.status(404).json({
+            error: {
+              code: "EVENT_NOT_FOUND",
+              message: "Event not found",
+            },
+          });
+          return;
+        }
+
+        if (error instanceof EventCannotBePublishedError) {
+          response.status(409).json({
+            error: {
+              code: "EVENT_CANNOT_BE_PUBLISHED",
+              message: "Event cannot be published",
             },
           });
           return;

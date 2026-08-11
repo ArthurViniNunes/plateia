@@ -436,6 +436,16 @@ Em caso de sucesso, a API responderá `201 Created` com o evento em `DRAFT`, os 
 
 Item externo inexistente responderá `404 CATALOG_EVENT_NOT_FOUND`. Indisponibilidade da Ticketmaster responderá `503 TICKETMASTER_UNAVAILABLE`.
 
+### Publicação
+
+A publicação utilizará `POST /api/events/:eventId/publish` e será permitida somente ao organizador proprietário.
+
+Evento inexistente ou pertencente a outro organizador responderá `404 EVENT_NOT_FOUND`, evitando revelar recursos de terceiros.
+
+Eventos fora de `DRAFT` ou que não satisfaçam as condições de publicação responderão `409 EVENT_CANNOT_BE_PUBLISHED`.
+
+A alteração de estado utilizará atualização condicional. Em tentativas concorrentes, somente uma publicação poderá ser concluída; as demais receberão conflito.
+
 ## Referências
 
 - [Ticketmaster Discovery API v2](https://developer.ticketmaster.com/products-and-docs/apis/discovery-api/v2/)

@@ -1,6 +1,7 @@
 import type { CatalogClient } from "../catalog/ticketmaster-client.js";
 import { prisma } from "../database/prisma.js";
 import type { CreateEventInput } from "./create-event-schema.js";
+import { toEventResponse } from "./event-response.js";
 
 interface CreateDraftEventOptions {
   organizerId: string;
@@ -59,22 +60,5 @@ export async function createDraftEvent({
     }),
   );
 
-  return {
-    id: event.id,
-    ticketmasterId: event.ticketmasterId,
-    title: event.title,
-    imageUrl: event.imageUrl,
-    classification: event.classification,
-    externalUrl: event.externalUrl,
-    startsAt: event.startsAt.toISOString(),
-    venue: {
-      name: event.venueName,
-      address: event.address,
-      city: event.city,
-      state: event.state,
-    },
-    priceInCents: event.priceInCents,
-    status: event.status,
-    capacity: event._count.seats,
-  };
+  return toEventResponse(event);
 }
