@@ -8,6 +8,11 @@ const envSchema = z.object({
       message: "CORS_ORIGIN must contain only the URL origin",
     }),
   JWT_SECRET: z.coerce.string().min(32, "JWT_SECRET must be at least 32 characters long"),
+  TICKETMASTER_API_KEY: z
+    .string()
+    .trim()
+    .min(1)
+    .optional(),
 });
 
 export function parseEnv(input: NodeJS.ProcessEnv) {

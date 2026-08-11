@@ -1,13 +1,23 @@
 import cors from "cors";
 import express from "express";
 import { createAuthRouter } from "./auth/auth-router.js";
+import {
+  createTicketmasterClient,
+  type CatalogClient,
+} from "./catalog/ticketmaster-client.js";
+import { createCatalogRouter } from "./catalog/catalog-router.js";
 
 interface CreateAppOptions {
   corsOrigin: string;
   jwtSecret: string;
+  catalogClient?: CatalogClient;
 }
 
-export function createApp({ corsOrigin, jwtSecret }: CreateAppOptions) {
+export function createApp({
+  corsOrigin,
+  jwtSecret,
+  catalogClient = createTicketmasterClient({}),
+}: CreateAppOptions) {
   const app = express();
 
   app.disable("x-powered-by");
@@ -30,6 +40,14 @@ export function createApp({ corsOrigin, jwtSecret }: CreateAppOptions) {
   app.use(
     "/api/auth",
     createAuthRouter({
+      jwtSecret,
+    }),
+  );
+
+  app.use(
+    "/api/catalog",
+    createCatalogRouter({
+      catalogClient,
       jwtSecret,
     }),
   );

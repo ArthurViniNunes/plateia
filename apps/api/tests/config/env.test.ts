@@ -49,4 +49,13 @@ describe("parseEnv", () => {
       }),
     ).toThrow();
   });
+
+  it("parses an optional Ticketmaster API key", () => {
+    const result = parseEnv({
+      ...validEnvironment,
+      TICKETMASTER_API_KEY: "ticketmaster-test-key",
+    });
+
+    expect(result.TICKETMASTER_API_KEY).toBe("ticketmaster-test-key");
+  });
 });
