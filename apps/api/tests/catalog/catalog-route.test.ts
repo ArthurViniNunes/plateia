@@ -17,8 +17,7 @@ if (!jwtSecret) {
 }
 
 const searchEvents = vi.fn<CatalogClient["searchEvents"]>();
-const getEventById =
-  vi.fn<CatalogClient["getEventById"]>();
+const getEventById = vi.fn<CatalogClient["getEventById"]>();
 
 const app = createApp({
   corsOrigin: "http://localhost:5173",
@@ -65,12 +64,10 @@ describe("GET /api/catalog/events", () => {
   });
 
   it("allows an organizer to search the external catalog", async () => {
-    const loginResponse = await request(app)
-      .post("/api/auth/login")
-      .send({
-        email: "organizer@plateia.local",
-        password: "Plateia123!",
-      });
+    const loginResponse = await request(app).post("/api/auth/login").send({
+      email: "organizer@plateia.local",
+      password: "Plateia123!",
+    });
 
     const { token } = loginResponseSchema.parse(loginResponse.body);
 
@@ -93,18 +90,14 @@ describe("GET /api/catalog/events", () => {
         },
       ],
     });
-    expect(searchEvents).toHaveBeenCalledExactlyOnceWith(
-      "festival",
-    );
+    expect(searchEvents).toHaveBeenCalledExactlyOnceWith("festival");
   });
-  
+
   it("rejects an invalid search query", async () => {
-    const loginResponse = await request(app)
-      .post("/api/auth/login")
-      .send({
-        email: "organizer@plateia.local",
-        password: "Plateia123!",
-      });
+    const loginResponse = await request(app).post("/api/auth/login").send({
+      email: "organizer@plateia.local",
+      password: "Plateia123!",
+    });
 
     const { token } = loginResponseSchema.parse(loginResponse.body);
 
@@ -126,11 +119,9 @@ describe("GET /api/catalog/events", () => {
   });
 
   it("rejects an unauthenticated catalog search", async () => {
-    const response = await request(app)
-      .get("/api/catalog/events")
-      .query({
-        query: "festival",
-      });
+    const response = await request(app).get("/api/catalog/events").query({
+      query: "festival",
+    });
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
@@ -152,12 +143,10 @@ describe("GET /api/catalog/events", () => {
       },
     });
 
-    const loginResponse = await request(app)
-      .post("/api/auth/login")
-      .send({
-        email: "customer@plateia.local",
-        password: "Plateia123!",
-      });
+    const loginResponse = await request(app).post("/api/auth/login").send({
+      email: "customer@plateia.local",
+      password: "Plateia123!",
+    });
 
     const { token } = loginResponseSchema.parse(loginResponse.body);
 
@@ -179,16 +168,12 @@ describe("GET /api/catalog/events", () => {
   });
 
   it("reports Ticketmaster unavailability", async () => {
-    searchEvents.mockRejectedValueOnce(
-      new TicketmasterUnavailableError(),
-    );
+    searchEvents.mockRejectedValueOnce(new TicketmasterUnavailableError());
 
-    const loginResponse = await request(app)
-      .post("/api/auth/login")
-      .send({
-        email: "organizer@plateia.local",
-        password: "Plateia123!",
-      });
+    const loginResponse = await request(app).post("/api/auth/login").send({
+      email: "organizer@plateia.local",
+      password: "Plateia123!",
+    });
 
     const { token } = loginResponseSchema.parse(loginResponse.body);
 

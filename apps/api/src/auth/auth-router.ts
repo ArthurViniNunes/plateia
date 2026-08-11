@@ -119,25 +119,21 @@ export function createAuthRouter({ jwtSecret }: CreateAuthRouterOptions) {
     });
   });
 
-  authRouter.get(
-    "/me",
-    authenticationMiddleware,
-    (request, response) => {
-      const user = request.authenticatedUser;
+  authRouter.get("/me", authenticationMiddleware, (request, response) => {
+    const user = request.authenticatedUser;
 
-      if (!user) {
-        response.status(401).json({
-          error: {
-            code: "UNAUTHORIZED",
-            message: "Authentication required",
-          },
-        });
-        return;
-      }
+    if (!user) {
+      response.status(401).json({
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Authentication required",
+        },
+      });
+      return;
+    }
 
-      response.status(200).json(user);
-    },
-  );
+    response.status(200).json(user);
+  });
 
   return authRouter;
 }

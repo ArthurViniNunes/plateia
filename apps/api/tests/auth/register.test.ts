@@ -58,48 +58,48 @@ describe("POST /api/auth/register", () => {
 
   it("rejects invalid registration data", async () => {
     const response = await request(app).post("/api/auth/register").send({
-        name: "A",
-        email: "invalid-email",
-        password: "short",
+      name: "A",
+      email: "invalid-email",
+      password: "short",
     });
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
-        error: {
+      error: {
         code: "VALIDATION_ERROR",
         message: "Invalid request data",
-        },
+      },
     });
 
     expect(await prisma.user.count()).toBe(0);
-    });
+  });
 
   it("rejects an email that is already registered", async () => {
     const registration = {
-        name: "Arthur Vinicius Carneiro Nunes",
-        email: "arthur@example.com",
-        password: "strong-password",
+      name: "Arthur Vinicius Carneiro Nunes",
+      email: "arthur@example.com",
+      password: "strong-password",
     };
 
     const firstResponse = await request(app)
-        .post("/api/auth/register")
-        .send(registration);
+      .post("/api/auth/register")
+      .send(registration);
 
     const duplicateResponse = await request(app)
-        .post("/api/auth/register")
-        .send({
+      .post("/api/auth/register")
+      .send({
         ...registration,
         email: "  ARTHUR@EXAMPLE.COM  ",
-        });
+      });
 
     expect(firstResponse.status).toBe(201);
     expect(duplicateResponse.status).toBe(409);
     expect(duplicateResponse.body).toEqual({
-        error: {
+      error: {
         code: "EMAIL_ALREADY_REGISTERED",
         message: "Email already registered",
-        },
+      },
     });
     expect(await prisma.user.count()).toBe(1);
-    });
+  });
 });

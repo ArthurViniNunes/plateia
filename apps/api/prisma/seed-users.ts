@@ -1,9 +1,6 @@
 import { hash } from "bcrypt";
 
-import {
-  Role,
-  type PrismaClient,
-} from "../src/generated/prisma/client.js";
+import { Role, type PrismaClient } from "../src/generated/prisma/client.js";
 
 const demonstrationPassword = "Plateia123!";
 

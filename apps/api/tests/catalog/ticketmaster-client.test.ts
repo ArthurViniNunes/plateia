@@ -74,9 +74,7 @@ describe("Ticketmaster client", () => {
     }
 
     expect(requestedResource.origin).toBe("https://app.ticketmaster.com");
-    expect(requestedResource.pathname).toBe(
-      "/discovery/v2/events.json",
-    );
+    expect(requestedResource.pathname).toBe("/discovery/v2/events.json");
     expect(requestedResource.searchParams.get("apikey")).toBe(
       "ticketmaster-test-key",
     );
@@ -99,106 +97,94 @@ describe("Ticketmaster client", () => {
     const fetchImplementation = vi.fn<typeof fetch>();
 
     const client = createTicketmasterClient({
-        fetchImplementation,
+      fetchImplementation,
     });
 
-    await expect(
-        client.searchEvents("festival"),
-    ).rejects.toMatchObject({
-        name: "TicketmasterUnavailableError",
-        message: "Ticketmaster catalog is unavailable",
+    await expect(client.searchEvents("festival")).rejects.toMatchObject({
+      name: "TicketmasterUnavailableError",
+      message: "Ticketmaster catalog is unavailable",
     });
 
     expect(fetchImplementation).not.toHaveBeenCalled();
-    });
+  });
 
-    it.each([401, 429, 500])(
+  it.each([401, 429, 500])(
     "converts Ticketmaster status %s into an unavailable error",
     async (status) => {
-        const fetchImplementation = vi.fn<typeof fetch>();
+      const fetchImplementation = vi.fn<typeof fetch>();
 
-        fetchImplementation.mockResolvedValue(
+      fetchImplementation.mockResolvedValue(
         new Response(null, {
-            status,
+          status,
         }),
-        );
+      );
 
-        const client = createTicketmasterClient({
+      const client = createTicketmasterClient({
         apiKey: "ticketmaster-test-key",
         fetchImplementation,
-        });
+      });
 
-        await expect(
-        client.searchEvents("festival"),
-        ).rejects.toMatchObject({
+      await expect(client.searchEvents("festival")).rejects.toMatchObject({
         name: "TicketmasterUnavailableError",
         message: "Ticketmaster catalog is unavailable",
-        });
+      });
     },
-    );
+  );
 
-    it("converts a network failure into an unavailable error", async () => {
+  it("converts a network failure into an unavailable error", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>();
+
+    fetchImplementation.mockRejectedValue(new TypeError("Network failure"));
+
+    const client = createTicketmasterClient({
+      apiKey: "ticketmaster-test-key",
+      fetchImplementation,
+    });
+
+    await expect(client.searchEvents("festival")).rejects.toMatchObject({
+      name: "TicketmasterUnavailableError",
+      message: "Ticketmaster catalog is unavailable",
+    });
+  });
+
+  it("converts a timeout into an unavailable error", async () => {
     const fetchImplementation = vi.fn<typeof fetch>();
 
     fetchImplementation.mockRejectedValue(
-        new TypeError("Network failure"),
+      new DOMException("Request timed out", "TimeoutError"),
     );
 
     const client = createTicketmasterClient({
-        apiKey: "ticketmaster-test-key",
-        fetchImplementation,
+      apiKey: "ticketmaster-test-key",
+      fetchImplementation,
     });
 
-    await expect(
-        client.searchEvents("festival"),
-    ).rejects.toMatchObject({
-        name: "TicketmasterUnavailableError",
-        message: "Ticketmaster catalog is unavailable",
+    await expect(client.searchEvents("festival")).rejects.toMatchObject({
+      name: "TicketmasterUnavailableError",
+      message: "Ticketmaster catalog is unavailable",
     });
-    });
+  });
 
-    it("converts a timeout into an unavailable error", async () => {
-    const fetchImplementation = vi.fn<typeof fetch>();
-
-    fetchImplementation.mockRejectedValue(
-        new DOMException("Request timed out", "TimeoutError"),
-    );
-
-    const client = createTicketmasterClient({
-        apiKey: "ticketmaster-test-key",
-        fetchImplementation,
-    });
-
-    await expect(
-        client.searchEvents("festival"),
-    ).rejects.toMatchObject({
-        name: "TicketmasterUnavailableError",
-        message: "Ticketmaster catalog is unavailable",
-    });
-    });
-
-    it("converts an invalid response into an unavailable error", async () => {
+  it("converts an invalid response into an unavailable error", async () => {
     const fetchImplementation = vi.fn<typeof fetch>();
 
     fetchImplementation.mockResolvedValue(
-        new Response("null", {
+      new Response("null", {
         status: 200,
         headers: {
-            "content-type": "application/json",
+          "content-type": "application/json",
         },
-        }),
+      }),
     );
 
     const client = createTicketmasterClient({
-        apiKey: "ticketmaster-test-key",
-        fetchImplementation,
+      apiKey: "ticketmaster-test-key",
+      fetchImplementation,
     });
 
-    await expect(
-        client.searchEvents("festival"),
-    ).rejects.toMatchObject({
-        name: "TicketmasterUnavailableError",
-        message: "Ticketmaster catalog is unavailable",
+    await expect(client.searchEvents("festival")).rejects.toMatchObject({
+      name: "TicketmasterUnavailableError",
+      message: "Ticketmaster catalog is unavailable",
     });
   });
 
@@ -240,12 +226,9 @@ describe("Ticketmaster client", () => {
       fetchImplementation,
     });
 
-    const event = await client.getEventById(
-      "ticketmaster-event-1",
-    );
+    const event = await client.getEventById("ticketmaster-event-1");
 
-    const requestedResource =
-      fetchImplementation.mock.calls[0]?.[0];
+    const requestedResource = fetchImplementation.mock.calls[0]?.[0];
 
     expect(requestedResource).toBeInstanceOf(URL);
 
@@ -283,9 +266,7 @@ describe("Ticketmaster client", () => {
       fetchImplementation,
     });
 
-    await expect(
-      client.getEventById("missing-event"),
-    ).rejects.toMatchObject({
+    await expect(client.getEventById("missing-event")).rejects.toMatchObject({
       name: "CatalogEventNotFoundError",
       message: "Catalog event not found",
     });

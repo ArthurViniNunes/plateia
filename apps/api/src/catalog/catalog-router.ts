@@ -18,10 +18,9 @@ export function createCatalogRouter({
   jwtSecret,
 }: CreateCatalogRouterOptions) {
   const catalogRouter = Router();
-  const authenticationMiddleware =
-    createAuthenticationMiddleware({
-      jwtSecret,
-    });
+  const authenticationMiddleware = createAuthenticationMiddleware({
+    jwtSecret,
+  });
 
   catalogRouter.get(
     "/events",
@@ -41,9 +40,7 @@ export function createCatalogRouter({
       }
 
       try {
-        const events = await catalogClient.searchEvents(
-          result.data.query,
-        );
+        const events = await catalogClient.searchEvents(result.data.query);
 
         response.status(200).json({
           events,

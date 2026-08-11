@@ -32,11 +32,7 @@ export const createEventSchema = z
         .regex(/^[a-zA-Z]{2}$/)
         .transform((state) => state.toUpperCase()),
     }),
-    priceInCents: z
-      .number()
-      .int()
-      .positive()
-      .max(2_147_483_647),
+    priceInCents: z.number().int().positive().max(2_147_483_647),
     rows: z.array(rowSchema).min(1).max(26),
   })
   .superRefine(({ rows }, context) => {
@@ -55,6 +51,4 @@ export const createEventSchema = z
     });
   });
 
-export type CreateEventInput = z.infer<
-  typeof createEventSchema
->;
+export type CreateEventInput = z.infer<typeof createEventSchema>;

@@ -7,7 +7,7 @@ on:
       - master
   pull_request:
     branches:
-      -  master
+      - master
 
 permissions:
   contents: read
@@ -62,6 +62,9 @@ jobs:
 
       - name: Gerar Prisma Client
         run: npm run prisma:generate --workspace apps/api
+
+      - name: Validar formatação
+        run: npm run format:check
 
       - name: Validar lint
         run: npm run lint

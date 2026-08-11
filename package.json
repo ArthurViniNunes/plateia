@@ -17,12 +17,15 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "format": "prettier . --write --ignore-unknown",
+    "format:check": "prettier . --check --ignore-unknown"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.8.1",
     "globals": "^17.9.0",
+    "prettier": "^3.9.6",
     "typescript-eslint": "^8.66.0"
   }
 }

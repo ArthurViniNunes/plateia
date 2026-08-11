@@ -7,7 +7,6 @@ import { SignJWT } from "jose";
 import { createApp } from "../../src/app.js";
 import { prisma } from "../../src/database/prisma.js";
 
-
 const jwtSecret = process.env.JWT_SECRET;
 
 if (!jwtSecret) {
@@ -67,7 +66,7 @@ describe("GET /api/auth/me", () => {
 
     expect(body.name).toBe("Arthur Vinicius Carneiro Nunes");
     expect(body.email).toBe("arthur@example.com");
-    expect(body.role).toBe("CUSTOMER")  
+    expect(body.role).toBe("CUSTOMER");
   });
 
   it("rejects a request without a token", async () => {
@@ -75,64 +74,64 @@ describe("GET /api/auth/me", () => {
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
-        error: {
+      error: {
         code: "UNAUTHORIZED",
         message: "Authentication required",
-        },
+      },
     });
   });
 
   it("rejects a malformed token", async () => {
     const response = await request(app)
-        .get("/api/auth/me")
-        .set("Authorization", "Bearer invalid-token");
+      .get("/api/auth/me")
+      .set("Authorization", "Bearer invalid-token");
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
-        error: {
+      error: {
         code: "UNAUTHORIZED",
         message: "Authentication required",
-        },
+      },
     });
   });
 
   it("rejects an expired token", async () => {
     const user = await prisma.user.findUniqueOrThrow({
-        where: {
+      where: {
         email: "arthur@example.com",
-        },
+      },
     });
 
     const expiredToken = await new SignJWT({
-        role: user.role,
+      role: user.role,
     })
-        .setProtectedHeader({
+      .setProtectedHeader({
         alg: "HS256",
-        })
-        .setSubject(user.id)
-        .setIssuer("plateia-api")
-        .setAudience("plateia-web")
-        .setIssuedAt(0)
-        .setExpirationTime(1)
-        .sign(new TextEncoder().encode(jwtSecret));
+      })
+      .setSubject(user.id)
+      .setIssuer("plateia-api")
+      .setAudience("plateia-web")
+      .setIssuedAt(0)
+      .setExpirationTime(1)
+      .sign(new TextEncoder().encode(jwtSecret));
 
     const response = await request(app)
-        .get("/api/auth/me")
-        .set("Authorization", `Bearer ${expiredToken}`);
+      .get("/api/auth/me")
+      .set("Authorization", `Bearer ${expiredToken}`);
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
-        error: {
+      error: {
         code: "UNAUTHORIZED",
         message: "Authentication required",
-        },
+      },
     });
   });
 
   it("rejects a valid token when the user no longer exists", async () => {
     const loginResponse = await request(app).post("/api/auth/login").send({
-        email: "arthur@example.com",
-        password: "strong-password",
+      email: "arthur@example.com",
+      password: "strong-password",
     });
 
     const { token } = loginResponseSchema.parse(loginResponse.body);
@@ -140,15 +139,15 @@ describe("GET /api/auth/me", () => {
     await prisma.user.deleteMany();
 
     const response = await request(app)
-        .get("/api/auth/me")
-        .set("Authorization", `Bearer ${token}`);
+      .get("/api/auth/me")
+      .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
-        error: {
+      error: {
         code: "UNAUTHORIZED",
         message: "Authentication required",
-        },
+      },
     });
   });
 });

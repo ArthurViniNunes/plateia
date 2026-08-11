@@ -13,9 +13,7 @@ export async function createDraftEvent({
   input,
   catalogClient,
 }: CreateDraftEventOptions) {
-  const catalogEvent = await catalogClient.getEventById(
-    input.ticketmasterId,
-  );
+  const catalogEvent = await catalogClient.getEventById(input.ticketmasterId);
 
   const seats = input.rows.flatMap((row) =>
     Array.from(

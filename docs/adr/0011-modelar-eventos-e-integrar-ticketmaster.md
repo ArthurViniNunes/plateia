@@ -1,7 +1,7 @@
 # ADR 0011: Modelar eventos e integrar o catálogo da Ticketmaster
 
-* Status: Aceito
-* Data: 2026-08-11
+- Status: Aceito
+- Data: 2026-08-11
 
 ## Contexto
 
@@ -31,9 +31,9 @@ Essa decisão permite que funcionalidades independentes, como cadastro, login e 
 
 A chave será obrigatória para:
 
-* pesquisar o catálogo externo;
-* consultar os detalhes de um item;
-* criar um evento com base nesse item.
+- pesquisar o catálogo externo;
+- consultar os detalhes de um item;
+- criar um evento com base nesse item.
 
 Quando a chave estiver ausente, as operações dependentes da Ticketmaster serão bloqueadas.
 
@@ -59,10 +59,10 @@ Dados inválidos responderão `400 Bad Request`:
 
 ```json
 {
-"error": {
+  "error": {
     "code": "VALIDATION_ERROR",
     "message": "Invalid request data"
-    }
+  }
 }
 ```
 
@@ -72,20 +72,20 @@ Requisições sem autenticação válida responderão `401 Unauthorized`. Usuár
 
 ```json
 {
-"error": {
+  "error": {
     "code": "FORBIDDEN",
     "message": "Insufficient permissions"
-    }
+  }
 }
 ```
 
 O back-end retornará somente os campos necessários para a interface:
 
-* ID externo;
-* título;
-* URL da imagem;
-* classificação;
-* URL original da Ticketmaster.
+- ID externo;
+- título;
+- URL da imagem;
+- classificação;
+- URL original da Ticketmaster.
 
 A imagem principal será a maior imagem disponível com proporção `16_9`. Caso não exista uma imagem nessa proporção, será utilizada a maior imagem disponível.
 
@@ -95,15 +95,15 @@ A resposta utilizará o envelope:
 
 ```json
 {
-"events": [
+  "events": [
     {
-    "id": "ticketmaster-event-id",
-    "title": "Nome do evento",
-    "imageUrl": "https://example.com/image.jpg",
-    "classification": "Music",
-    "externalUrl": "https://ticketmaster.example/event"
+      "id": "ticketmaster-event-id",
+      "title": "Nome do evento",
+      "imageUrl": "https://example.com/image.jpg",
+      "classification": "Music",
+      "externalUrl": "https://ticketmaster.example/event"
     }
-]
+  ]
 }
 ```
 
@@ -131,22 +131,22 @@ Essa consulta adicional impedirá a criação de eventos a partir de IDs inventa
 
 Serão tratadas como indisponibilidade:
 
-* chave ausente ou inválida;
-* resposta `401`;
-* excesso de requisições com resposta `429`;
-* respostas `5xx`;
-* falha de rede;
-* timeout;
-* corpo incompatível com o contrato esperado.
+- chave ausente ou inválida;
+- resposta `401`;
+- excesso de requisições com resposta `429`;
+- respostas `5xx`;
+- falha de rede;
+- timeout;
+- corpo incompatível com o contrato esperado.
 
 Essas situações responderão `503 Service Unavailable`:
 
 ```json
 {
-"error": {
+  "error": {
     "code": "TICKETMASTER_UNAVAILABLE",
     "message": "Ticketmaster catalog is unavailable"
-    }
+  }
 }
 ```
 
@@ -158,12 +158,12 @@ Uma resposta válida indicando que o item solicitado não existe será tratada s
 
 Ao criar um evento, o Plateia armazenará um snapshot do item externo contendo:
 
-* ID da Ticketmaster;
-* título;
-* URL da imagem, quando disponível;
-* classificação, quando disponível;
-* URL original da Ticketmaster, quando disponível;
-* data e hora da consulta externa.
+- ID da Ticketmaster;
+- título;
+- URL da imagem, quando disponível;
+- classificação, quando disponível;
+- URL original da Ticketmaster, quando disponível;
+- data e hora da consulta externa.
 
 O snapshot preservará as informações utilizadas durante a criação, mesmo que a Ticketmaster altere ou remova o item posteriormente.
 
@@ -173,23 +173,23 @@ O mesmo item da Ticketmaster poderá originar mais de um evento no Plateia. Essa
 
 O organizador definirá:
 
-* data e horário;
-* nome do local;
-* endereço;
-* cidade;
-* estado;
-* fileiras;
-* quantidade de assentos por fileira;
-* preço único dos assentos.
+- data e horário;
+- nome do local;
+- endereço;
+- cidade;
+- estado;
+- fileiras;
+- quantidade de assentos por fileira;
+- preço único dos assentos.
 
 A data e o horário serão recebidos com informação de fuso e armazenados em UTC.
 
 O local será representado pelos campos:
 
-* `venueName`;
-* `address`;
-* `city`;
-* `state`.
+- `venueName`;
+- `address`;
+- `city`;
+- `state`.
 
 Esses dados não precisarão coincidir com o local ou a data informados pela Ticketmaster, pois o catálogo será utilizado como referência para a criação de uma sessão própria no Plateia.
 
@@ -209,14 +209,14 @@ O organizador fornecerá as fileiras e suas respectivas quantidades:
 
 ```json
 [
-    {
+  {
     "label": "A",
     "seatCount": 10
-    },
-    {
+  },
+  {
     "label": "B",
     "seatCount": 12
-    }
+  }
 ]
 ```
 
@@ -226,9 +226,9 @@ Cada rótulo deverá conter entre 1 e 10 caracteres. Um evento poderá possuir n
 
 Cada assento será persistido individualmente com:
 
-* referência ao evento;
-* rótulo da fileira;
-* número do assento.
+- referência ao evento;
+- rótulo da fileira;
+- número do assento.
 
 A combinação entre evento, fileira e número será única.
 
@@ -250,9 +250,9 @@ A exclusão de um organizador que possua eventos será bloqueada pelo banco.
 
 Os eventos utilizarão os estados:
 
-* `DRAFT`;
-* `PUBLISHED`;
-* `CANCELLED`.
+- `DRAFT`;
+- `PUBLISHED`;
+- `CANCELLED`.
 
 O fluxo permitido será:
 
@@ -266,11 +266,11 @@ Somente eventos em `DRAFT` poderão ser editados.
 
 A publicação exigirá:
 
-* item da Ticketmaster previamente validado;
-* data futura;
-* local preenchido;
-* preço positivo;
-* pelo menos um assento.
+- item da Ticketmaster previamente validado;
+- data futura;
+- local preenchido;
+- preço positivo;
+- pelo menos um assento.
 
 Somente eventos em `PUBLISHED` poderão ser cancelados.
 
@@ -284,35 +284,35 @@ Caso um evento seja removido diretamente durante testes ou manutenção, seus as
 
 O evento armazenará:
 
-* identificador UUID;
-* organizador proprietário;
-* ID externo da Ticketmaster;
-* título;
-* URL opcional da imagem;
-* classificação opcional;
-* URL externa opcional;
-* data da consulta ao catálogo;
-* data e horário da sessão;
-* dados do local;
-* preço em centavos;
-* estado;
-* datas de criação e atualização.
+- identificador UUID;
+- organizador proprietário;
+- ID externo da Ticketmaster;
+- título;
+- URL opcional da imagem;
+- classificação opcional;
+- URL externa opcional;
+- data da consulta ao catálogo;
+- data e horário da sessão;
+- dados do local;
+- preço em centavos;
+- estado;
+- datas de criação e atualização.
 
 Serão criados índices para:
 
-* organizador;
-* estado e data da sessão;
-* ID externo da Ticketmaster.
+- organizador;
+- estado e data da sessão;
+- ID externo da Ticketmaster.
 
 ### Seat
 
 O assento armazenará:
 
-* identificador UUID;
-* evento;
-* rótulo da fileira;
-* número;
-* datas de criação e atualização.
+- identificador UUID;
+- evento;
+- rótulo da fileira;
+- número;
+- datas de criação e atualização.
 
 A combinação entre evento, fileira e número será protegida por uma restrição de unicidade.
 
@@ -322,26 +322,26 @@ Os testes da integração com a Ticketmaster utilizarão transporte injetável e
 
 Serão cobertos:
 
-* pesquisa bem-sucedida;
-* normalização do termo pesquisado;
-* seleção da imagem principal;
-* mapeamento da classificação;
-* item encontrado por ID;
-* chave ausente;
-* resposta não autorizada;
-* limite de requisições;
-* indisponibilidade externa;
-* timeout;
-* resposta malformada;
-* item inexistente.
+- pesquisa bem-sucedida;
+- normalização do termo pesquisado;
+- seleção da imagem principal;
+- mapeamento da classificação;
+- item encontrado por ID;
+- chave ausente;
+- resposta não autorizada;
+- limite de requisições;
+- indisponibilidade externa;
+- timeout;
+- resposta malformada;
+- item inexistente.
 
 Os testes da rota de catálogo também cobrirão:
 
-* consulta realizada por organizador;
-* autenticação ausente;
-* papel sem permissão;
-* parâmetro inválido;
-* tradução da indisponibilidade externa para `503`.
+- consulta realizada por organizador;
+- autenticação ausente;
+- papel sem permissão;
+- parâmetro inválido;
+- tradução da indisponibilidade externa para `503`.
 
 Os testes de criação de evento utilizarão o PostgreSQL exclusivo de testes e uma implementação simulada do catálogo.
 
@@ -351,28 +351,28 @@ Nenhum teste automatizado dependerá de acesso real à Ticketmaster.
 
 ### Positivas
 
-* O catálogo externo será efetivamente validado.
-* A chave permanecerá restrita ao back-end.
-* A aplicação continuará parcialmente utilizável sem a Ticketmaster.
-* O snapshot protegerá os eventos locais de alterações externas.
-* O mesmo item poderá originar diferentes sessões.
-* A capacidade sempre corresponderá ao mapa persistido.
-* Centavos inteiros evitarão erros de ponto flutuante.
-* Assentos individuais permitirão controle preciso das reservas.
-* Limites explícitos reduzirão a criação acidental de mapas excessivos.
-* O ciclo de vida reduzirá estados ambíguos.
-* Os testes não dependerão da disponibilidade do provedor externo.
+- O catálogo externo será efetivamente validado.
+- A chave permanecerá restrita ao back-end.
+- A aplicação continuará parcialmente utilizável sem a Ticketmaster.
+- O snapshot protegerá os eventos locais de alterações externas.
+- O mesmo item poderá originar diferentes sessões.
+- A capacidade sempre corresponderá ao mapa persistido.
+- Centavos inteiros evitarão erros de ponto flutuante.
+- Assentos individuais permitirão controle preciso das reservas.
+- Limites explícitos reduzirão a criação acidental de mapas excessivos.
+- O ciclo de vida reduzirá estados ambíguos.
+- Os testes não dependerão da disponibilidade do provedor externo.
 
 ### Negativas
 
-* A criação de eventos dependerá da disponibilidade da Ticketmaster.
-* Sem uma chave válida, novos eventos não poderão ser criados.
-* A confirmação por ID adicionará uma chamada externa ao fluxo.
-* O snapshot duplicará parte dos dados externos.
-* Persistir cada assento aumentará a quantidade de registros.
-* A criação de mapas maiores exigirá múltiplas inserções no banco.
-* Eventos publicados não poderão ser corrigidos sem cancelamento.
-* A ausência de exclusão manterá rascunhos antigos no banco.
+- A criação de eventos dependerá da disponibilidade da Ticketmaster.
+- Sem uma chave válida, novos eventos não poderão ser criados.
+- A confirmação por ID adicionará uma chamada externa ao fluxo.
+- O snapshot duplicará parte dos dados externos.
+- Persistir cada assento aumentará a quantidade de registros.
+- A criação de mapas maiores exigirá múltiplas inserções no banco.
+- Eventos publicados não poderão ser corrigidos sem cancelamento.
+- A ausência de exclusão manterá rascunhos antigos no banco.
 
 ## Alternativas consideradas
 
@@ -438,5 +438,5 @@ Item externo inexistente responderá `404 CATALOG_EVENT_NOT_FOUND`. Indisponibil
 
 ## Referências
 
-* [Ticketmaster Discovery API v2](https://developer.ticketmaster.com/products-and-docs/apis/discovery-api/v2/)
-* [Ticketmaster API — Getting Started](https://developer.ticketmaster.com/products-and-docs/apis/getting-started/)
+- [Ticketmaster Discovery API v2](https://developer.ticketmaster.com/products-and-docs/apis/discovery-api/v2/)
+- [Ticketmaster API — Getting Started](https://developer.ticketmaster.com/products-and-docs/apis/getting-started/)

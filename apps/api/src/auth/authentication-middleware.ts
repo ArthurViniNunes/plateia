@@ -7,9 +7,7 @@ interface CreateAuthenticationMiddlewareOptions {
   jwtSecret: string;
 }
 
-function respondUnauthorized(
-  response: Parameters<RequestHandler>[1],
-): void {
+function respondUnauthorized(response: Parameters<RequestHandler>[1]): void {
   response.status(401).json({
     error: {
       code: "UNAUTHORIZED",
@@ -27,11 +25,7 @@ export function createAuthenticationMiddleware({
     const authorization = request.header("authorization");
     const [scheme, token, extra] = authorization?.split(/\s+/) ?? [];
 
-    if (
-      scheme?.toLowerCase() !== "bearer" ||
-      !token ||
-      extra !== undefined
-    ) {
+    if (scheme?.toLowerCase() !== "bearer" || !token || extra !== undefined) {
       respondUnauthorized(response);
       return;
     }

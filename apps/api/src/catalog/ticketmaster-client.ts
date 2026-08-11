@@ -57,9 +57,7 @@ const ticketmasterEventSchema = z.object({
   name: z.string().min(1),
   url: z.url().optional(),
   images: z.array(ticketmasterImageSchema).optional(),
-  classifications: z
-    .array(ticketmasterClassificationSchema)
-    .optional(),
+  classifications: z.array(ticketmasterClassificationSchema).optional(),
 });
 
 const ticketmasterSearchResponseSchema = z.object({
@@ -73,16 +71,12 @@ const ticketmasterSearchResponseSchema = z.object({
 function selectImage(
   images: z.infer<typeof ticketmasterImageSchema>[] = [],
 ): string | null {
-  const widescreenImages = images.filter(
-    (image) => image.ratio === "16_9",
-  );
+  const widescreenImages = images.filter((image) => image.ratio === "16_9");
 
-  const candidates =
-    widescreenImages.length > 0 ? widescreenImages : images;
+  const candidates = widescreenImages.length > 0 ? widescreenImages : images;
 
   const selectedImage = candidates.toSorted(
-    (first, second) =>
-      (second.width ?? 0) - (first.width ?? 0),
+    (first, second) => (second.width ?? 0) - (first.width ?? 0),
   )[0];
 
   return selectedImage?.url ?? null;
@@ -90,16 +84,11 @@ function selectImage(
 
 function selectClassification(
   classifications:
-    | z.infer<typeof ticketmasterClassificationSchema>[]
-    | undefined,
+    z.infer<typeof ticketmasterClassificationSchema>[] | undefined,
 ): string | null {
   const classification = classifications?.[0];
 
-  return (
-    classification?.segment?.name ??
-    classification?.genre?.name ??
-    null
-  );
+  return classification?.segment?.name ?? classification?.genre?.name ?? null;
 }
 
 function mapCatalogEvent(
@@ -109,9 +98,7 @@ function mapCatalogEvent(
     id: event.id,
     title: event.name,
     imageUrl: selectImage(event.images),
-    classification: selectClassification(
-      event.classifications,
-    ),
+    classification: selectClassification(event.classifications),
     externalUrl: event.url ?? null,
   };
 }
@@ -187,9 +174,7 @@ export function createTicketmasterClient({
         ticketmasterSearchResponseSchema,
       );
 
-      return (response._embedded?.events ?? []).map(
-        mapCatalogEvent,
-      );
+      return (response._embedded?.events ?? []).map(mapCatalogEvent);
     },
 
     async getEventById(id: string): Promise<CatalogEvent> {

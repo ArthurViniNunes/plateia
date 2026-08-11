@@ -1,16 +1,16 @@
 # ADR 0010: Adotar JWT e bcrypt na autenticação
 
-* Status: Aceito
-* Data: 2026-08-10
-* Última atualização: 2026-08-11
+- Status: Aceito
+- Data: 2026-08-10
+- Última atualização: 2026-08-11
 
 ## Contexto
 
 O Plateia possui três papéis de usuário:
 
-* `ORGANIZER`: cria e gerencia eventos;
-* `CUSTOMER`: reserva lugares, realiza pagamentos simulados e recebe ingressos;
-* `GATEKEEPER`: valida ingressos na entrada dos eventos.
+- `ORGANIZER`: cria e gerencia eventos;
+- `CUSTOMER`: reserva lugares, realiza pagamentos simulados e recebe ingressos;
+- `GATEKEEPER`: valida ingressos na entrada dos eventos.
 
 A API precisa identificar o usuário, proteger recursos privados e restringir operações conforme o papel associado à conta.
 
@@ -30,17 +30,17 @@ Authorization: Bearer <token>
 
 O token:
 
-* será emitido somente após login bem-sucedido;
-* não será emitido automaticamente após o cadastro;
-* utilizará o algoritmo `HS256`;
-* terá validade de oito horas;
-* não utilizará refresh token no MVP;
-* será assinado com `JWT_SECRET`;
-* exigirá um segredo com pelo menos 32 caracteres;
-* utilizará o ID do usuário no claim `sub`;
-* incluirá o papel do usuário no claim `role`;
-* utilizará `plateia-api` como `issuer`;
-* utilizará `plateia-web` como `audience`.
+- será emitido somente após login bem-sucedido;
+- não será emitido automaticamente após o cadastro;
+- utilizará o algoritmo `HS256`;
+- terá validade de oito horas;
+- não utilizará refresh token no MVP;
+- será assinado com `JWT_SECRET`;
+- exigirá um segredo com pelo menos 32 caracteres;
+- utilizará o ID do usuário no claim `sub`;
+- incluirá o papel do usuário no claim `role`;
+- utilizará `plateia-api` como `issuer`;
+- utilizará `plateia-web` como `audience`.
 
 O `JWT_SECRET` será obrigatório em todos os ambientes. A aplicação deverá falhar imediatamente durante a inicialização caso ele esteja ausente ou seja inválido.
 
@@ -50,8 +50,8 @@ As senhas serão protegidas com `bcrypt`, utilizando custo 12.
 
 As senhas aceitas pela aplicação deverão possuir:
 
-* no mínimo 8 caracteres;
-* no máximo 72 bytes, respeitando o limite efetivamente processado pelo bcrypt.
+- no mínimo 8 caracteres;
+- no máximo 72 bytes, respeitando o limite efetivamente processado pelo bcrypt.
 
 O hash da senha nunca será retornado pela API.
 
@@ -61,10 +61,10 @@ O endpoint de cadastro aceitará nome, e-mail e senha.
 
 Os dados serão tratados da seguinte forma:
 
-* o nome será aparado e deverá possuir entre 2 e 120 caracteres;
-* o e-mail será aparado, convertido para letras minúsculas e limitado a 254 caracteres;
-* a senha seguirá os limites definidos para o bcrypt;
-* todo cadastro público criará exclusivamente um usuário `CUSTOMER`.
+- o nome será aparado e deverá possuir entre 2 e 120 caracteres;
+- o e-mail será aparado, convertido para letras minúsculas e limitado a 254 caracteres;
+- a senha seguirá os limites definidos para o bcrypt;
+- todo cadastro público criará exclusivamente um usuário `CUSTOMER`.
 
 Em caso de sucesso, a API responderá `201 Created` com os dados públicos do usuário, sem emitir um token.
 
@@ -72,10 +72,10 @@ Dados malformados responderão `400 Bad Request`:
 
 ```json
 {
-"error": {
+  "error": {
     "code": "VALIDATION_ERROR",
     "message": "Invalid request data"
-    }
+  }
 }
 ```
 
@@ -83,10 +83,10 @@ Quando o e-mail já estiver cadastrado, a API responderá `409 Conflict`:
 
 ```json
 {
-"error": {
+  "error": {
     "code": "EMAIL_ALREADY_REGISTERED",
     "message": "Email already registered"
-    }
+  }
 }
 ```
 
@@ -98,13 +98,13 @@ Em caso de sucesso, a API responderá `200 OK`:
 
 ```json
 {
-"token": "<jwt>",
-"user": {
+  "token": "<jwt>",
+  "user": {
     "id": "<uuid>",
     "name": "<nome>",
     "email": "<email>",
     "role": "<papel>"
-    }
+  }
 }
 ```
 
@@ -114,10 +114,10 @@ E-mail inexistente e senha incorreta responderão de forma indistinguível com `
 
 ```json
 {
-"error": {
+  "error": {
     "code": "INVALID_CREDENTIALS",
     "message": "Invalid email or password"
-    }
+  }
 }
 ```
 
@@ -129,9 +129,9 @@ Após validar assinatura, algoritmo, expiração, emissor e audiência do JWT, a
 
 Essa consulta permitirá:
 
-* rejeitar tokens associados a usuários removidos;
-* utilizar o papel atual armazenado no banco;
-* aplicar alterações de papel sem aguardar a expiração do token.
+- rejeitar tokens associados a usuários removidos;
+- utilizar o papel atual armazenado no banco;
+- aplicar alterações de papel sem aguardar a expiração do token.
 
 O banco de dados será a fonte de verdade para o papel do usuário. O claim `role` continuará presente no JWT como parte do contrato do token, mas não substituirá a consulta ao registro atual.
 
@@ -139,10 +139,10 @@ Token ausente, malformado, inválido, expirado ou associado a um usuário inexis
 
 ```json
 {
-"error": {
+  "error": {
     "code": "UNAUTHORIZED",
     "message": "Authentication required"
-    }
+  }
 }
 ```
 
@@ -179,25 +179,25 @@ Enquanto os testes compartilharem o mesmo banco e realizarem limpeza explícita 
 
 ### Positivas
 
-* A API não precisa armazenar sessões de usuário no servidor.
-* A solução se integra naturalmente ao front-end React.
-* Tokens expiram automaticamente após oito horas.
-* O bcrypt é conhecido e amplamente utilizado.
-* O limite de 72 bytes evita aceitar senhas cujo conteúdo seria parcialmente ignorado pelo bcrypt.
-* Respostas genéricas de login reduzem a enumeração de contas.
-* Usuários removidos deixam de acessar rotas protegidas imediatamente.
-* Alterações de papel passam a valer sem aguardar a expiração do JWT.
-* O seed idempotente facilita a execução e a avaliação do projeto.
+- A API não precisa armazenar sessões de usuário no servidor.
+- A solução se integra naturalmente ao front-end React.
+- Tokens expiram automaticamente após oito horas.
+- O bcrypt é conhecido e amplamente utilizado.
+- O limite de 72 bytes evita aceitar senhas cujo conteúdo seria parcialmente ignorado pelo bcrypt.
+- Respostas genéricas de login reduzem a enumeração de contas.
+- Usuários removidos deixam de acessar rotas protegidas imediatamente.
+- Alterações de papel passam a valer sem aguardar a expiração do JWT.
+- O seed idempotente facilita a execução e a avaliação do projeto.
 
 ### Negativas
 
-* Sem refresh token, o usuário deverá realizar novo login após oito horas.
-* A aplicação não oferecerá revogação individual de tokens ou uma lista de bloqueio no MVP.
-* Cada requisição protegida realizará uma consulta adicional ao banco.
-* O custo 12 do bcrypt aumenta o tempo necessário para cadastro, login, seed e testes.
-* Os testes de integração ficam mais lentos devido ao hashing real de senhas.
-* Credenciais fixas de demonstração não são adequadas para um ambiente real de produção.
-* A execução sequencial dos testes poderá aumentar o tempo da suíte conforme o projeto crescer.
+- Sem refresh token, o usuário deverá realizar novo login após oito horas.
+- A aplicação não oferecerá revogação individual de tokens ou uma lista de bloqueio no MVP.
+- Cada requisição protegida realizará uma consulta adicional ao banco.
+- O custo 12 do bcrypt aumenta o tempo necessário para cadastro, login, seed e testes.
+- Os testes de integração ficam mais lentos devido ao hashing real de senhas.
+- Credenciais fixas de demonstração não são adequadas para um ambiente real de produção.
+- A execução sequencial dos testes poderá aumentar o tempo da suíte conforme o projeto crescer.
 
 ## Alternativas consideradas
 

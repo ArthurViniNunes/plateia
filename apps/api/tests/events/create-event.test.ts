@@ -1,14 +1,7 @@
 import { hash } from "bcrypt";
 import request from "supertest";
 import { z } from "zod";
-import {
-  afterAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createApp } from "../../src/app.js";
 import {
@@ -18,18 +11,15 @@ import {
 } from "../../src/catalog/ticketmaster-client.js";
 import { prisma } from "../../src/database/prisma.js";
 
-
 const jwtSecret = process.env.JWT_SECRET;
 
 if (!jwtSecret) {
   throw new Error("JWT_SECRET is required for event tests");
 }
 
-const searchEvents =
-  vi.fn<CatalogClient["searchEvents"]>();
+const searchEvents = vi.fn<CatalogClient["searchEvents"]>();
 
-const getEventById =
-  vi.fn<CatalogClient["getEventById"]>();
+const getEventById = vi.fn<CatalogClient["getEventById"]>();
 
 const app = createApp({
   corsOrigin: "http://localhost:5173",
@@ -118,16 +108,12 @@ describe("POST /api/events", () => {
   });
 
   it("creates a draft event and all its seats transactionally", async () => {
-    const loginResponse = await request(app)
-      .post("/api/auth/login")
-      .send({
-        email: "organizer@plateia.local",
-        password: "Plateia123!",
-      });
+    const loginResponse = await request(app).post("/api/auth/login").send({
+      email: "organizer@plateia.local",
+      password: "Plateia123!",
+    });
 
-    const { token } = loginResponseSchema.parse(
-      loginResponse.body,
-    );
+    const { token } = loginResponseSchema.parse(loginResponse.body);
 
     const response = await request(app)
       .post("/api/events")
@@ -156,9 +142,7 @@ describe("POST /api/events", () => {
 
     expect(response.status).toBe(201);
 
-    const body = createEventResponseSchema.parse(
-      response.body,
-    );
+    const body = createEventResponseSchema.parse(response.body);
 
     expect(body).toMatchObject({
       ticketmasterId: "ticketmaster-event-1",
@@ -223,53 +207,49 @@ describe("POST /api/events", () => {
   });
 
   it("rejects duplicated row labels after normalization", async () => {
-    const loginResponse = await request(app)
-        .post("/api/auth/login")
-        .send({
-        email: "organizer@plateia.local",
-        password: "Plateia123!",
-        });
+    const loginResponse = await request(app).post("/api/auth/login").send({
+      email: "organizer@plateia.local",
+      password: "Plateia123!",
+    });
 
-    const { token } = loginResponseSchema.parse(
-        loginResponse.body,
-    );
+    const { token } = loginResponseSchema.parse(loginResponse.body);
 
     const response = await request(app)
-        .post("/api/events")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
+      .post("/api/events")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
         ...createValidEventRequest(),
         rows: [
-            {
+          {
             label: "A",
             seatCount: 2,
-            },
-            {
+          },
+          {
             label: " a ",
             seatCount: 3,
-            },
+          },
         ],
-        });
+      });
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
-        error: {
+      error: {
         code: "VALIDATION_ERROR",
         message: "Invalid request data",
-        },
+      },
     });
     expect(getEventById).not.toHaveBeenCalled();
     expect(await prisma.event.count()).toBe(0);
-    });
+  });
 
-    it("rejects an unauthenticated event creation", async () => {
-      const response = await request(app)
-        .post("/api/events")
-        .send(createValidEventRequest());
+  it("rejects an unauthenticated event creation", async () => {
+    const response = await request(app)
+      .post("/api/events")
+      .send(createValidEventRequest());
 
-      expect(response.status).toBe(401);
-      expect(response.body).toEqual({
-        error: {
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: {
         code: "UNAUTHORIZED",
         message: "Authentication required",
       },
@@ -278,100 +258,84 @@ describe("POST /api/events", () => {
   });
 
   it("rejects event creation by a customer", async () => {
-  await prisma.user.create({
-    data: {
-      name: "Cliente Plateia",
-      email: "customer@plateia.local",
-      passwordHash: await hash("Plateia123!", 12),
-      role: "CUSTOMER",
-    },
-  });
+    await prisma.user.create({
+      data: {
+        name: "Cliente Plateia",
+        email: "customer@plateia.local",
+        passwordHash: await hash("Plateia123!", 12),
+        role: "CUSTOMER",
+      },
+    });
 
-  const loginResponse = await request(app)
-    .post("/api/auth/login")
-    .send({
+    const loginResponse = await request(app).post("/api/auth/login").send({
       email: "customer@plateia.local",
       password: "Plateia123!",
     });
 
-  const { token } = loginResponseSchema.parse(
-    loginResponse.body,
-  );
+    const { token } = loginResponseSchema.parse(loginResponse.body);
 
-  const response = await request(app)
-    .post("/api/events")
-    .set("Authorization", `Bearer ${token}`)
-    .send(createValidEventRequest());
+    const response = await request(app)
+      .post("/api/events")
+      .set("Authorization", `Bearer ${token}`)
+      .send(createValidEventRequest());
 
-  expect(response.status).toBe(403);
-  expect(response.body).toEqual({
-    error: {
-      code: "FORBIDDEN",
-      message: "Insufficient permissions",
-    },
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      error: {
+        code: "FORBIDDEN",
+        message: "Insufficient permissions",
+      },
+    });
+    expect(getEventById).not.toHaveBeenCalled();
   });
-  expect(getEventById).not.toHaveBeenCalled();
-});
 
-it("rejects an unknown catalog event", async () => {
-  getEventById.mockRejectedValueOnce(
-    new CatalogEventNotFoundError(),
-  );
+  it("rejects an unknown catalog event", async () => {
+    getEventById.mockRejectedValueOnce(new CatalogEventNotFoundError());
 
-  const loginResponse = await request(app)
-    .post("/api/auth/login")
-    .send({
+    const loginResponse = await request(app).post("/api/auth/login").send({
       email: "organizer@plateia.local",
       password: "Plateia123!",
     });
 
-  const { token } = loginResponseSchema.parse(
-    loginResponse.body,
-  );
+    const { token } = loginResponseSchema.parse(loginResponse.body);
 
-  const response = await request(app)
-    .post("/api/events")
-    .set("Authorization", `Bearer ${token}`)
-    .send(createValidEventRequest());
+    const response = await request(app)
+      .post("/api/events")
+      .set("Authorization", `Bearer ${token}`)
+      .send(createValidEventRequest());
 
-  expect(response.status).toBe(404);
-  expect(response.body).toEqual({
-    error: {
-      code: "CATALOG_EVENT_NOT_FOUND",
-      message: "Catalog event not found",
-    },
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      error: {
+        code: "CATALOG_EVENT_NOT_FOUND",
+        message: "Catalog event not found",
+      },
+    });
+    expect(await prisma.event.count()).toBe(0);
   });
-  expect(await prisma.event.count()).toBe(0);
-});
 
-it("rejects creation while Ticketmaster is unavailable", async () => {
-  getEventById.mockRejectedValueOnce(
-    new TicketmasterUnavailableError(),
-  );
+  it("rejects creation while Ticketmaster is unavailable", async () => {
+    getEventById.mockRejectedValueOnce(new TicketmasterUnavailableError());
 
-  const loginResponse = await request(app)
-    .post("/api/auth/login")
-    .send({
+    const loginResponse = await request(app).post("/api/auth/login").send({
       email: "organizer@plateia.local",
       password: "Plateia123!",
     });
 
-  const { token } = loginResponseSchema.parse(
-    loginResponse.body,
-  );
+    const { token } = loginResponseSchema.parse(loginResponse.body);
 
-  const response = await request(app)
-    .post("/api/events")
-    .set("Authorization", `Bearer ${token}`)
-    .send(createValidEventRequest());
+    const response = await request(app)
+      .post("/api/events")
+      .set("Authorization", `Bearer ${token}`)
+      .send(createValidEventRequest());
 
-  expect(response.status).toBe(503);
-  expect(response.body).toEqual({
-    error: {
-      code: "TICKETMASTER_UNAVAILABLE",
-      message: "Ticketmaster catalog is unavailable",
-    },
+    expect(response.status).toBe(503);
+    expect(response.body).toEqual({
+      error: {
+        code: "TICKETMASTER_UNAVAILABLE",
+        message: "Ticketmaster catalog is unavailable",
+      },
+    });
+    expect(await prisma.event.count()).toBe(0);
   });
-  expect(await prisma.event.count()).toBe(0);
-});
 });

@@ -20,10 +20,9 @@ export function createEventsRouter({
   jwtSecret,
 }: CreateEventsRouterOptions) {
   const eventsRouter = Router();
-  const authenticationMiddleware =
-    createAuthenticationMiddleware({
-      jwtSecret,
-    });
+  const authenticationMiddleware = createAuthenticationMiddleware({
+    jwtSecret,
+  });
 
   eventsRouter.post(
     "/",
