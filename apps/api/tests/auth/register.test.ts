@@ -8,6 +8,7 @@ import { z } from "zod";
 
 const app = createApp({
   corsOrigin: "http://localhost:5173",
+  jwtSecret: "local-test-secret-with-at-least-32-characters",
 });
 
 const registrationResponseSchema = z

@@ -34,6 +34,10 @@ Validam jornadas reais, porém são mais lentos, mais frágeis e oferecem diagn�
 
 Adotar ciclos TDD de teste vermelho, implementação mínima, teste verde e refatoração. Priorizar comportamento observável em vez de detalhes privados.
 
+Os testes de integração da API utilizarão o PostgreSQL exclusivo de testes. Enquanto compartilharem o mesmo banco e realizarem limpeza explícita dos dados, os arquivos de teste serão executados sequencialmente com `fileParallelism: false`.
+
+Essa escolha evita condições de corrida em que a preparação de um arquivo remove dados necessários para outro. A execução paralela poderá ser retomada caso cada worker receba um schema ou banco isolado.
+
 Usar:
 
 - Vitest como executor comum;

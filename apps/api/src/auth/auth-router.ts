@@ -1,59 +1,118 @@
-import { hash } from "bcrypt";
+import { compare, hash } from "bcrypt";
 import { Router } from "express";
 
+import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../database/prisma.js";
+import { createAccessToken } from "./create-access-token.js";
+import { loginSchema } from "./login-schema.js";
 import { registerSchema } from "./register-schema.js";
-import { Prisma as PrismaClient } from "../generated/prisma/client.js";
 
-export const authRouter = Router();
+interface CreateAuthRouterOptions {
+  jwtSecret: string;
+}
 
-authRouter.post("/register", async (request, response) => {
+export function createAuthRouter({ jwtSecret }: CreateAuthRouterOptions) {
+  const authRouter = Router();
+
+  authRouter.post("/register", async (request, response) => {
     const result = registerSchema.safeParse(request.body);
 
     if (!result.success) {
-    response.status(400).json({
+      response.status(400).json({
         error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid request data",
+          code: "VALIDATION_ERROR",
+          message: "Invalid request data",
         },
-    });
-    return;
+      });
+      return;
+    }
+
+    const input = result.data;
+    const passwordHash = await hash(input.password, 12);
+
+    try {
+      const user = await prisma.user.create({
+        data: {
+          name: input.name,
+          email: input.email,
+          passwordHash,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+        },
+      });
+
+      response.status(201).json(user);
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        response.status(409).json({
+          error: {
+            code: "EMAIL_ALREADY_REGISTERED",
+            message: "Email already registered",
+          },
+        });
+        return;
+      }
+
+      throw error;
+    }
+  });
+
+  authRouter.post("/login", async (request, response) => {
+    const result = loginSchema.safeParse(request.body);
+
+    if (!result.success) {
+      response.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Invalid request data",
+        },
+      });
+      return;
     }
 
     const input = result.data;
 
-    const passwordHash = await hash(input.password, 12);
-
-    try {
-    const user = await prisma.user.create({
-        data: {
-        name: input.name,
+    const user = await prisma.user.findUnique({
+      where: {
         email: input.email,
-        passwordHash,
-        },
-        select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        },
+      },
     });
 
-    response.status(201).json(user);
-    } catch (error: unknown) {
-    if (
-        error instanceof PrismaClient.PrismaClientKnownRequestError &&
-        error.code === "P2002"
-    ) {
-        response.status(409).json({
+    const passwordMatches =
+      user !== null && (await compare(input.password, user.passwordHash));
+
+    if (!user || !passwordMatches) {
+      response.status(401).json({
         error: {
-            code: "EMAIL_ALREADY_REGISTERED",
-            message: "Email already registered",
+          code: "INVALID_CREDENTIALS",
+          message: "Invalid email or password",
         },
-        });
-        return;
+      });
+      return;
     }
 
-    throw error;
-    }
-});
+    const token = await createAccessToken({
+      user,
+      secret: jwtSecret,
+    });
+
+    response.status(200).json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  });
+
+  return authRouter;
+}

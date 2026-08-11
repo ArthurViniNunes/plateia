@@ -6,6 +6,7 @@ import { createApp } from "../src/app.js";
 const allowedOrigin = "http://localhost:5173";
 const app = createApp({
   corsOrigin: allowedOrigin,
+  jwtSecret: "local-test-secret-with-at-least-32-characters",
 });
 
 describe("GET /health", () => {

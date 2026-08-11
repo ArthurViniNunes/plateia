@@ -1,12 +1,13 @@
 import cors from "cors";
 import express from "express";
-import { authRouter } from "./auth/auth-router.js";
+import { createAuthRouter } from "./auth/auth-router.js";
 
 interface CreateAppOptions {
   corsOrigin: string;
+  jwtSecret: string;
 }
 
-export function createApp({ corsOrigin }: CreateAppOptions) {
+export function createApp({ corsOrigin, jwtSecret }: CreateAppOptions) {
   const app = express();
 
   app.disable("x-powered-by");
@@ -26,7 +27,12 @@ export function createApp({ corsOrigin }: CreateAppOptions) {
     }),
   );
 
-  app.use("/api/auth", authRouter);
+  app.use(
+    "/api/auth",
+    createAuthRouter({
+      jwtSecret,
+    }),
+  );
 
   app.get("/health", (_request, response) => {
     response.status(200).json({

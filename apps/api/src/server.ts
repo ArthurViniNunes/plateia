@@ -7,6 +7,7 @@ const env = parseEnv(process.env);
 
 const app = createApp({
   corsOrigin: env.CORS_ORIGIN,
+  jwtSecret: env.JWT_SECRET,
 });
 
 app.listen(env.PORT, () => {

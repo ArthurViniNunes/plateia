@@ -25,19 +25,35 @@ O token:
 
 As senhas serão protegidas com `bcrypt`, usando custo 12.
 
+O JWT utilizará:
+
+- algoritmo `HS256`;
+- validade de oito horas;
+- ID do usuário no claim `sub`;
+- papel do usuário no claim `role`;
+- `issuer` igual a `plateia-api`;
+- `audience` igual a `plateia-web`.
+
 O cadastro:
 
-- aceitará nome completo, e-mail e senha;
+- nome aparado, entre 2 e 120 caracteres;
+- e-mail aparado, normalizado em minúsculas e limitado a 254 caracteres.
 - normalizará o e-mail em minúsculas;
-- exigirá senha com pelo menos oito caracteres;
+- senha entre 8 caracteres e 72 bytes, respeitando o limite processado pelo bcrypt;
 - criará exclusivamente usuários `CUSTOMER`;
 - responderá `201 Created` sem autenticar o usuário;
 - responderá `409 Conflict` para e-mail já cadastrado;
 - nunca retornará o hash da senha.
 
-O login responderá `200 OK` com o token e os dados públicos do usuário. Credenciais inválidas responderão `401 Unauthorized` com mensagem genérica.
+O login em caso de sucesso, a API retornará `200 OK` com o JWT e os dados públicos do usuário no formato `{ token, user }`.
 
 Os testes de integração utilizarão o PostgreSQL de testes e limparão os usuários antes de cada caso enquanto a entidade ainda não possuir relacionamentos.
+
+O login receberá e-mail e senha. O e-mail será aparado e normalizado em minúsculas.
+
+Dados malformados responderão `400 Bad Request` com o código `VALIDATION_ERROR`.
+
+E-mail inexistente e senha incorreta responderão de forma indistinguível com `401 Unauthorized` e o código `INVALID_CREDENTIALS`, evitando revelar quais usuários estão cadastrados.
 
 ## Consequências
 
