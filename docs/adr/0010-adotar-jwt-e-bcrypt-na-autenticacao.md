@@ -55,6 +55,10 @@ Dados malformados responderão `400 Bad Request` com o código `VALIDATION_ERROR
 
 E-mail inexistente e senha incorreta responderão de forma indistinguível com `401 Unauthorized` e o código `INVALID_CREDENTIALS`, evitando revelar quais usuários estão cadastrados.
 
+Toda requisição protegida consultará o usuário no banco após validar o JWT. Assim, usuários removidos deixam de acessar imediatamente e alterações de papel passam a valer sem aguardar a expiração do token.
+
+Token ausente, malformado, inválido, expirado ou associado a usuário inexistente responderá de forma indistinguível com `401 Unauthorized`, código `UNAUTHORIZED` e mensagem `Authentication required`.
+
 ## Consequências
 
 ### Positivas

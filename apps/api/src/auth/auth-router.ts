@@ -6,6 +6,7 @@ import { prisma } from "../database/prisma.js";
 import { createAccessToken } from "./create-access-token.js";
 import { loginSchema } from "./login-schema.js";
 import { registerSchema } from "./register-schema.js";
+import { createAuthenticationMiddleware } from "./authentication-middleware.js";
 
 interface CreateAuthRouterOptions {
   jwtSecret: string;
@@ -13,6 +14,10 @@ interface CreateAuthRouterOptions {
 
 export function createAuthRouter({ jwtSecret }: CreateAuthRouterOptions) {
   const authRouter = Router();
+
+  const authenticationMiddleware = createAuthenticationMiddleware({
+    jwtSecret,
+  });
 
   authRouter.post("/register", async (request, response) => {
     const result = registerSchema.safeParse(request.body);
@@ -113,6 +118,26 @@ export function createAuthRouter({ jwtSecret }: CreateAuthRouterOptions) {
       },
     });
   });
+
+  authRouter.get(
+    "/me",
+    authenticationMiddleware,
+    (request, response) => {
+      const user = request.authenticatedUser;
+
+      if (!user) {
+        response.status(401).json({
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Authentication required",
+          },
+        });
+        return;
+      }
+
+      response.status(200).json(user);
+    },
+  );
 
   return authRouter;
 }
