@@ -30,6 +30,7 @@ Este diretório reúne os Architecture Decision Records (ADRs) do Plateia. O obj
 | [0008](./0008-adotar-mui-com-identidade-editorial.md) | Adotar MUI com identidade editorial própria | Aceito |
 | [0009](./0009-validar-configuracao-e-falhar-rapidamente.md) | Validar configuração e falhar rapidamente | Aceito |
 | [0010](./0010-adotar-jwt-e-bcrypt-na-autenticacao.md) | Adotar JWT e bcrypt na autenticação | Aceito |
+| [0011](./0011-modelar-eventos-e-integrar-ticketmaster.md) | Modelar eventos e integrar o catálogo da Ticketmaster | Aceito |
 
 ## Decisões ainda pendentes
 

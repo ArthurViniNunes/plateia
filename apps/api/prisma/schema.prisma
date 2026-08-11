@@ -16,13 +16,64 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name         String
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  role         Role     @default(CUSTOMER)
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  email           String   @unique
+  passwordHash    String   @map("password_hash")
+  role            Role     @default(CUSTOMER)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organizedEvents Event[]  @relation("EventOrganizer")
 
   @@map("users")
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+
+  @@map("event_status")
+}
+
+model Event {
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizerId      String      @map("organizer_id") @db.Uuid
+  ticketmasterId   String      @map("ticketmaster_id")
+  title            String
+  imageUrl         String?     @map("image_url")
+  classification   String?
+  externalUrl      String?     @map("external_url")
+  catalogFetchedAt DateTime    @map("catalog_fetched_at") @db.Timestamptz(3)
+  startsAt         DateTime    @map("starts_at") @db.Timestamptz(3)
+  venueName        String      @map("venue_name")
+  address          String
+  city             String
+  state            String
+  priceInCents     Int         @map("price_in_cents")
+  status           EventStatus @default(DRAFT)
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organizer User   @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: Restrict)
+  seats     Seat[]
+
+  @@index([organizerId], map: "events_organizer_id_idx")
+  @@index([status, startsAt], map: "events_status_starts_at_idx")
+  @@index([ticketmasterId], map: "events_ticketmaster_id_idx")
+  @@map("events")
+}
+
+model Seat {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId   String   @map("event_id") @db.Uuid
+  rowLabel  String   @map("row_label")
+  number    Int
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, rowLabel, number], map: "seats_event_row_number_key")
+  @@map("seats")
 }
