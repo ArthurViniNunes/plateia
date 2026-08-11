@@ -42,6 +42,7 @@ jobs:
       PORT: 3333
       CORS_ORIGIN: http://localhost:5173
       DATABASE_URL: postgresql://plateia_test:plateia_test_password@localhost:5432/plateia_test?schema=public
+      JWT_SECRET: "ci-only-secret-not-for-production-at-least-32-characters"
 
     steps:
       - name: Baixar repositório
