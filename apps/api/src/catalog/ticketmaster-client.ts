@@ -10,9 +10,8 @@ export interface CatalogEvent {
 
 export interface CatalogClient {
   searchEvents(query: string): Promise<CatalogEvent[]>;
+  getEventById(id: string): Promise<CatalogEvent>;
 }
-
-
 
 interface CreateTicketmasterClientOptions {
   apiKey?: string;
@@ -24,6 +23,13 @@ export class TicketmasterUnavailableError extends Error {
   constructor(options?: ErrorOptions) {
     super("Ticketmaster catalog is unavailable", options);
     this.name = "TicketmasterUnavailableError";
+  }
+}
+
+export class CatalogEventNotFoundError extends Error {
+  constructor(options?: ErrorOptions) {
+    super("Catalog event not found", options);
+    this.name = "CatalogEventNotFoundError";
   }
 }
 
@@ -96,66 +102,110 @@ function selectClassification(
   );
 }
 
+function mapCatalogEvent(
+  event: z.infer<typeof ticketmasterEventSchema>,
+): CatalogEvent {
+  return {
+    id: event.id,
+    title: event.name,
+    imageUrl: selectImage(event.images),
+    classification: selectClassification(
+      event.classifications,
+    ),
+    externalUrl: event.url ?? null,
+  };
+}
+
 export function createTicketmasterClient({
   apiKey,
   fetchImplementation = fetch,
   timeoutMs = 5_000,
 }: CreateTicketmasterClientOptions): CatalogClient {
+  function requireApiKey(): string {
+    if (!apiKey) {
+      throw new TicketmasterUnavailableError();
+    }
+
+    return apiKey;
+  }
+
+  async function requestTicketmaster<T>(
+    url: URL,
+    schema: z.ZodType<T>,
+    notFoundError?: () => Error,
+  ): Promise<T> {
+    try {
+      const response = await fetchImplementation(url, {
+        headers: {
+          accept: "application/json",
+        },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+
+      if (response.status === 404 && notFoundError) {
+        throw notFoundError();
+      }
+
+      if (!response.ok) {
+        throw new TicketmasterUnavailableError({
+          cause: new Error(
+            `Ticketmaster responded with status ${response.status}`,
+          ),
+        });
+      }
+
+      const payload: unknown = await response.json();
+
+      return schema.parse(payload);
+    } catch (error: unknown) {
+      if (
+        error instanceof TicketmasterUnavailableError ||
+        error instanceof CatalogEventNotFoundError
+      ) {
+        throw error;
+      }
+
+      throw new TicketmasterUnavailableError({
+        cause: error,
+      });
+    }
+  }
+
   return {
     async searchEvents(query: string): Promise<CatalogEvent[]> {
-        if (!apiKey) {
-            throw new TicketmasterUnavailableError();
-        }
+      const url = new URL(
+        "https://app.ticketmaster.com/discovery/v2/events.json",
+      );
 
-        const url = new URL(
-            "https://app.ticketmaster.com/discovery/v2/events.json",
-        );
+      url.searchParams.set("apikey", requireApiKey());
+      url.searchParams.set("keyword", query);
+      url.searchParams.set("countryCode", "BR");
+      url.searchParams.set("size", "12");
 
-        url.searchParams.set("apikey", apiKey);
-        url.searchParams.set("keyword", query);
-        url.searchParams.set("countryCode", "BR");
-        url.searchParams.set("size", "12");
+      const response = await requestTicketmaster(
+        url,
+        ticketmasterSearchResponseSchema,
+      );
 
-        try {
-            const response = await fetchImplementation(url, {
-            headers: {
-                accept: "application/json",
-            },
-            signal: AbortSignal.timeout(timeoutMs),
-            });
+      return (response._embedded?.events ?? []).map(
+        mapCatalogEvent,
+      );
+    },
 
-            if (!response.ok) {
-            throw new TicketmasterUnavailableError({
-                cause: new Error(
-                `Ticketmaster responded with status ${response.status}`,
-                ),
-            });
-            }
+    async getEventById(id: string): Promise<CatalogEvent> {
+      const url = new URL(
+        `https://app.ticketmaster.com/discovery/v2/events/${encodeURIComponent(id)}.json`,
+      );
 
-            const payload: unknown = await response.json();
-            const parsedResponse =
-            ticketmasterSearchResponseSchema.parse(payload);
+      url.searchParams.set("apikey", requireApiKey());
 
-            return (parsedResponse._embedded?.events ?? []).map(
-            (event) => ({
-                id: event.id,
-                title: event.name,
-                imageUrl: selectImage(event.images),
-                classification: selectClassification(
-                event.classifications,
-                ),
-                externalUrl: event.url ?? null,
-            }),
-            );
-        } catch (error: unknown) {
-            if (error instanceof TicketmasterUnavailableError) {
-            throw error;
-            }
+      const event = await requestTicketmaster(
+        url,
+        ticketmasterEventSchema,
+        () => new CatalogEventNotFoundError(),
+      );
 
-            throw new TicketmasterUnavailableError({
-            cause: error,
-            });
-        }
-        }
+      return mapCatalogEvent(event);
+    },
   };
 }

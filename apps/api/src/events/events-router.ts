@@ -1,0 +1,92 @@
+import { Router } from "express";
+
+import { createAuthenticationMiddleware } from "../auth/authentication-middleware.js";
+import { requireRoles } from "../auth/authorization-middleware.js";
+import {
+  CatalogEventNotFoundError,
+  TicketmasterUnavailableError,
+  type CatalogClient,
+} from "../catalog/ticketmaster-client.js";
+import { createDraftEvent } from "./create-draft-event.js";
+import { createEventSchema } from "./create-event-schema.js";
+
+interface CreateEventsRouterOptions {
+  catalogClient: CatalogClient;
+  jwtSecret: string;
+}
+
+export function createEventsRouter({
+  catalogClient,
+  jwtSecret,
+}: CreateEventsRouterOptions) {
+  const eventsRouter = Router();
+  const authenticationMiddleware =
+    createAuthenticationMiddleware({
+      jwtSecret,
+    });
+
+  eventsRouter.post(
+    "/",
+    authenticationMiddleware,
+    requireRoles("ORGANIZER"),
+    async (request, response) => {
+      const user = request.authenticatedUser;
+
+      if (!user) {
+        response.status(401).json({
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Authentication required",
+          },
+        });
+        return;
+      }
+
+      const result = createEventSchema.safeParse(request.body);
+
+      if (!result.success) {
+        response.status(400).json({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Invalid request data",
+          },
+        });
+        return;
+      }
+
+      try {
+        const event = await createDraftEvent({
+          organizerId: user.id,
+          input: result.data,
+          catalogClient,
+        });
+
+        response.status(201).json(event);
+      } catch (error: unknown) {
+        if (error instanceof CatalogEventNotFoundError) {
+          response.status(404).json({
+            error: {
+              code: "CATALOG_EVENT_NOT_FOUND",
+              message: "Catalog event not found",
+            },
+          });
+          return;
+        }
+
+        if (error instanceof TicketmasterUnavailableError) {
+          response.status(503).json({
+            error: {
+              code: "TICKETMASTER_UNAVAILABLE",
+              message: "Ticketmaster catalog is unavailable",
+            },
+          });
+          return;
+        }
+
+        throw error;
+      }
+    },
+  );
+
+  return eventsRouter;
+}

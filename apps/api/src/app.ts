@@ -6,6 +6,7 @@ import {
   type CatalogClient,
 } from "./catalog/ticketmaster-client.js";
 import { createCatalogRouter } from "./catalog/catalog-router.js";
+import { createEventsRouter } from "./events/events-router.js";
 
 interface CreateAppOptions {
   corsOrigin: string;
@@ -47,6 +48,14 @@ export function createApp({
   app.use(
     "/api/catalog",
     createCatalogRouter({
+      catalogClient,
+      jwtSecret,
+    }),
+  );
+
+  app.use(
+    "/api/events",
+    createEventsRouter({
       catalogClient,
       jwtSecret,
     }),

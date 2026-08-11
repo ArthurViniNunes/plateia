@@ -17,12 +17,15 @@ if (!jwtSecret) {
 }
 
 const searchEvents = vi.fn<CatalogClient["searchEvents"]>();
+const getEventById =
+  vi.fn<CatalogClient["getEventById"]>();
 
 const app = createApp({
   corsOrigin: "http://localhost:5173",
   jwtSecret,
   catalogClient: {
     searchEvents,
+    getEventById,
   },
 });
 
@@ -44,6 +47,7 @@ describe("GET /api/catalog/events", () => {
       },
     });
 
+    getEventById.mockReset();
     searchEvents.mockReset();
     searchEvents.mockResolvedValue([
       {

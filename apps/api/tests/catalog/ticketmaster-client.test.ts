@@ -200,5 +200,94 @@ describe("Ticketmaster client", () => {
         name: "TicketmasterUnavailableError",
         message: "Ticketmaster catalog is unavailable",
     });
+  });
+
+  it("gets and maps a Ticketmaster event by ID", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>();
+
+    fetchImplementation.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "ticketmaster-event-1",
+          name: "Festival Plateia",
+          url: "https://ticketmaster.example/events/1",
+          images: [
+            {
+              ratio: "16_9",
+              url: "https://images.example/festival.jpg",
+              width: 1920,
+            },
+          ],
+          classifications: [
+            {
+              segment: {
+                name: "Music",
+              },
+            },
+          ],
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+          },
+        },
+      ),
+    );
+
+    const client = createTicketmasterClient({
+      apiKey: "ticketmaster-test-key",
+      fetchImplementation,
     });
+
+    const event = await client.getEventById(
+      "ticketmaster-event-1",
+    );
+
+    const requestedResource =
+      fetchImplementation.mock.calls[0]?.[0];
+
+    expect(requestedResource).toBeInstanceOf(URL);
+
+    if (!(requestedResource instanceof URL)) {
+      throw new Error("Expected Ticketmaster request to use a URL");
+    }
+
+    expect(requestedResource.pathname).toBe(
+      "/discovery/v2/events/ticketmaster-event-1.json",
+    );
+    expect(requestedResource.searchParams.get("apikey")).toBe(
+      "ticketmaster-test-key",
+    );
+
+    expect(event).toEqual({
+      id: "ticketmaster-event-1",
+      title: "Festival Plateia",
+      imageUrl: "https://images.example/festival.jpg",
+      classification: "Music",
+      externalUrl: "https://ticketmaster.example/events/1",
+    });
+  });
+
+  it("reports a catalog event as not found when Ticketmaster returns 404", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>();
+
+    fetchImplementation.mockResolvedValue(
+      new Response(null, {
+        status: 404,
+      }),
+    );
+
+    const client = createTicketmasterClient({
+      apiKey: "ticketmaster-test-key",
+      fetchImplementation,
+    });
+
+    await expect(
+      client.getEventById("missing-event"),
+    ).rejects.toMatchObject({
+      name: "CatalogEventNotFoundError",
+      message: "Catalog event not found",
+    });
+  });
 });

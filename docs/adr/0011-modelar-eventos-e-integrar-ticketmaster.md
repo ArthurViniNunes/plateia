@@ -424,6 +424,18 @@ Foi descartado porque a disponibilidade dependerá de reservas temporárias, pag
 
 Foi descartada no MVP para preservar o histórico necessário aos fluxos de reserva, ingresso e portaria.
 
+### Criação de eventos
+
+A criação utilizará `POST /api/events` e será restrita a usuários `ORGANIZER`.
+
+A entrada conterá o ID da Ticketmaster, data e horário, local, preço em centavos e configuração das fileiras. A aplicação normalizará os dados antes da persistência.
+
+A consulta externa ocorrerá antes da transação. A transação de banco conterá somente a criação do evento e de seus assentos, evitando manter recursos do PostgreSQL ocupados durante uma chamada de rede.
+
+Em caso de sucesso, a API responderá `201 Created` com o evento em `DRAFT`, os dados do snapshot, o local normalizado e a capacidade derivada dos assentos.
+
+Item externo inexistente responderá `404 CATALOG_EVENT_NOT_FOUND`. Indisponibilidade da Ticketmaster responderá `503 TICKETMASTER_UNAVAILABLE`.
+
 ## Referências
 
 * [Ticketmaster Discovery API v2](https://developer.ticketmaster.com/products-and-docs/apis/discovery-api/v2/)
