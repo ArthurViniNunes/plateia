@@ -1,0 +1,18 @@
+{
+  "name": "Plateia",
+  "short_name": "Plateia",
+  "description": "Plataforma de eventos, reservas e ingressos.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffaf1",
+  "theme_color": "#171512",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 64 64"
+  role="img"
+  aria-labelledby="title"
+>
+  <title id="title">Plateia</title>
+
+  <defs>
+    <mask id="ticket-shape">
+      <rect width="64" height="64" fill="black" />
+      <rect x="5" y="8" width="54" height="48" rx="7" fill="white" />
+      <circle cx="5" cy="32" r="5" fill="black" />
+      <circle cx="59" cy="32" r="5" fill="black" />
+    </mask>
+  </defs>
+
+  <rect
+    x="5"
+    y="8"
+    width="54"
+    height="48"
+    rx="7"
+    fill="#171512"
+    mask="url(#ticket-shape)"
+  />
+
+  <path
+    d="M22 17V47"
+    stroke="#f2b84b"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-dasharray="2 4"
+  />
+
+  <path
+    d="M29 46V18H40C47 18 51 22 51 28C51 34 47 38 40 38H35V46H29ZM35 24V32H40C43 32 45 31 45 28C45 25 43 24 40 24H35Z"
+    fill="#f2b84b"
+  />
+</svg>
