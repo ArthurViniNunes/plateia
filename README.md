@@ -596,7 +596,7 @@ As variáveis de ambiente de produção devem utilizar:
 
 ## Licença
 
-Este projeto adota a licença MIT.
+Este projeto adota a [licença MIT](LICENSE).
 
 ## Autor - Arthur Vinicius Carneiro Nunes
 
