@@ -10,21 +10,26 @@ import { RegisterPage } from "./pages/register-page";
 import { GatePage } from "./pages/gate-page";
 import { OrganizerEventsPage } from "./pages/organizer-events-page";
 import { CreateEventPage } from "./pages/create-event-page";
+import { AppNavigation } from "./components/app-navigation";
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<EventsPage />} />
-      <Route path="/events/:eventId" element={<EventDetailsPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/checkout/:reservationId" element={<CheckoutPage />} />
-      <Route path="/tickets" element={<TicketsPage />} />
-      <Route path="/tickets/:code" element={<SharedTicketPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/gate" element={<GatePage />} />
-      <Route path="/organizer/events" element={<OrganizerEventsPage />} />
-      <Route path="/organizer/events/new" element={<CreateEventPage />} />
-    </Routes>
+    <>
+      <AppNavigation />
+
+      <Routes>
+        <Route path="/" element={<EventsPage />} />
+        <Route path="/events/:eventId" element={<EventDetailsPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/checkout/:reservationId" element={<CheckoutPage />} />
+        <Route path="/tickets" element={<TicketsPage />} />
+        <Route path="/tickets/:code" element={<SharedTicketPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/gate" element={<GatePage />} />
+        <Route path="/organizer/events" element={<OrganizerEventsPage />} />
+        <Route path="/organizer/events/new" element={<CreateEventPage />} />
+      </Routes>
+    </>
   );
 }
 

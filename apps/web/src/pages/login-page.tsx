@@ -19,6 +19,7 @@ import {
   readPendingReservation,
 } from "../session/pending-reservation";
 import { saveCheckoutReservation } from "../session/checkout-reservation";
+import { saveAuthenticatedSession } from "../session/auth-session";
 
 function getSafeReturnTo(returnTo: string | null) {
   if (!returnTo || !returnTo.startsWith("/") || returnTo.startsWith("//")) {
@@ -49,7 +50,7 @@ export function LoginPage() {
         password,
       });
 
-      sessionStorage.setItem("plateia:access-token", authentication.token);
+      saveAuthenticatedSession(authentication.token, authentication.user);
 
       const pendingReservation = readPendingReservation();
 
