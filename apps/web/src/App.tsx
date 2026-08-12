@@ -8,6 +8,8 @@ import { SharedTicketPage } from "./pages/shared-ticket-page";
 import { TicketsPage } from "./pages/tickets-page";
 import { RegisterPage } from "./pages/register-page";
 import { GatePage } from "./pages/gate-page";
+import { OrganizerEventsPage } from "./pages/organizer-events-page";
+import { CreateEventPage } from "./pages/create-event-page";
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
       <Route path="/tickets/:code" element={<SharedTicketPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/gate" element={<GatePage />} />
+      <Route path="/organizer/events" element={<OrganizerEventsPage />} />
+      <Route path="/organizer/events/new" element={<CreateEventPage />} />
     </Routes>
   );
 }
