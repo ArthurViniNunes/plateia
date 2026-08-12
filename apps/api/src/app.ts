@@ -9,6 +9,7 @@ import { createCatalogRouter } from "./catalog/catalog-router.js";
 import { createEventsRouter } from "./events/events-router.js";
 import { createPaymentsRouter } from "./payments/payments-router.js";
 import { createTicketsRouter } from "./tickets/tickets-router.js";
+import { createGateRouter } from "./gate/gate-router.js";
 
 interface CreateAppOptions {
   corsOrigin: string;
@@ -73,6 +74,13 @@ export function createApp({
   app.use(
     "/api/tickets",
     createTicketsRouter({
+      jwtSecret,
+    }),
+  );
+
+  app.use(
+    "/api/gate",
+    createGateRouter({
       jwtSecret,
     }),
   );
