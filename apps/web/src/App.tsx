@@ -7,6 +7,7 @@ import { LoginPage } from "./pages/login-page";
 import { SharedTicketPage } from "./pages/shared-ticket-page";
 import { TicketsPage } from "./pages/tickets-page";
 import { RegisterPage } from "./pages/register-page";
+import { GatePage } from "./pages/gate-page";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
       <Route path="/tickets" element={<TicketsPage />} />
       <Route path="/tickets/:code" element={<SharedTicketPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/gate" element={<GatePage />} />
     </Routes>
   );
 }
