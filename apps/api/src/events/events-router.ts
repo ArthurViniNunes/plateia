@@ -2,9 +2,11 @@ import { Router } from "express";
 import { z } from "zod";
 
 import {
+  EventCannotBeCancelledError,
   EventCannotBePublishedError,
   EventNotFoundError,
 } from "./event-errors.js";
+import { SeatsUnavailableError } from "../reservations/reservation-errors.js";
 import { publishEvent } from "./publish-event.js";
 
 import { createAuthenticationMiddleware } from "../auth/authentication-middleware.js";
@@ -21,7 +23,8 @@ import { listPublicEvents } from "./list-public-events.js";
 import { getPublicEvent } from "./get-public-event.js";
 import { createReservation } from "../reservations/create-reservation.js";
 import { createReservationSchema } from "../reservations/create-reservation-schema.js";
-import { SeatsUnavailableError } from "../reservations/reservation-errors.js";
+import { cancelEvent } from "./cancel-event.js";
+import { listManagedEvents } from "./list-managed-events.js";
 
 interface CreateEventsRouterOptions {
   catalogClient: CatalogClient;
@@ -36,6 +39,29 @@ export function createEventsRouter({
   const authenticationMiddleware = createAuthenticationMiddleware({
     jwtSecret,
   });
+
+  eventsRouter.get(
+    "/mine",
+    authenticationMiddleware,
+    requireRoles("ORGANIZER"),
+    async (request, response) => {
+      const user = request.authenticatedUser;
+
+      if (!user) {
+        response.status(401).json({
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Authentication required",
+          },
+        });
+        return;
+      }
+
+      const events = await listManagedEvents(user.id);
+
+      response.status(200).json(events);
+    },
+  );
 
   eventsRouter.get("/", async (request, response) => {
     const result = listEventsQuerySchema.safeParse(request.query);
@@ -274,6 +300,67 @@ export function createEventsRouter({
             error: {
               code: "EVENT_CANNOT_BE_PUBLISHED",
               message: "Event cannot be published",
+            },
+          });
+          return;
+        }
+
+        throw error;
+      }
+    },
+  );
+
+  eventsRouter.post(
+    "/:eventId/cancel",
+    authenticationMiddleware,
+    requireRoles("ORGANIZER"),
+    async (request, response) => {
+      const user = request.authenticatedUser;
+      const eventIdResult = z.uuid().safeParse(request.params.eventId);
+
+      if (!user) {
+        response.status(401).json({
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Authentication required",
+          },
+        });
+        return;
+      }
+
+      if (!eventIdResult.success) {
+        response.status(404).json({
+          error: {
+            code: "EVENT_NOT_FOUND",
+            message: "Event not found",
+          },
+        });
+        return;
+      }
+
+      try {
+        const event = await cancelEvent({
+          eventId: eventIdResult.data,
+          organizerId: user.id,
+        });
+
+        response.status(200).json(event);
+      } catch (error: unknown) {
+        if (error instanceof EventNotFoundError) {
+          response.status(404).json({
+            error: {
+              code: "EVENT_NOT_FOUND",
+              message: "Event not found",
+            },
+          });
+          return;
+        }
+
+        if (error instanceof EventCannotBeCancelledError) {
+          response.status(409).json({
+            error: {
+              code: "EVENT_CANNOT_BE_CANCELLED",
+              message: "Event cannot be cancelled",
             },
           });
           return;

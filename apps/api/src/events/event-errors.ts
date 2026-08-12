@@ -11,3 +11,10 @@ export class EventCannotBePublishedError extends Error {
     this.name = "EventCannotBePublishedError";
   }
 }
+
+export class EventCannotBeCancelledError extends Error {
+  constructor() {
+    super("Event cannot be cancelled");
+    this.name = "EventCannotBeCancelledError";
+  }
+}
