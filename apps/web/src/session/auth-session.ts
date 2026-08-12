@@ -52,6 +52,17 @@ export function readAuthenticatedUser(): AuthenticatedUser | null {
   }
 }
 
+export function readAccessToken(): string | null {
+  const accessToken = sessionStorage.getItem(accessTokenKey);
+
+  if (!accessToken || accessToken.trim().length === 0) {
+    sessionStorage.removeItem(accessTokenKey);
+    return null;
+  }
+
+  return accessToken;
+}
+
 export function clearAuthenticatedSession() {
   sessionStorage.removeItem(accessTokenKey);
   sessionStorage.removeItem(authenticatedUserKey);

@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import App from "../App";
+import { saveAuthenticatedSession } from "../session/auth-session";
 
 const eventId = "7c8ef142-4fcb-4f8a-a108-55ee12e2f001";
 
@@ -214,5 +215,114 @@ describe("event details", () => {
         name: "Entre para continuar",
       }),
     ).toBeInTheDocument();
+  });
+
+  it("creates the reservation directly when the customer is already authenticated", async () => {
+    saveAuthenticatedSession("valid-access-token", {
+      id: "4c8ef142-4fcb-4f8a-a108-55ee12e2f004",
+      name: "Cliente Plateia",
+      email: "customer@plateia.local",
+      role: "CUSTOMER",
+    });
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = getRequestUrl(input);
+
+      if (
+        url.endsWith(`/api/events/${eventId}`) &&
+        (init?.method === undefined || init.method === "GET")
+      ) {
+        return Promise.resolve(
+          new Response(JSON.stringify(eventDetails), {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }),
+        );
+      }
+
+      if (
+        url.endsWith(`/api/events/${eventId}/reservations`) &&
+        init?.method === "POST"
+      ) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              id: "5c8ef142-4fcb-4f8a-a108-55ee12e2f005",
+              eventId,
+              status: "PENDING",
+              expiresAt: "2099-08-20T22:10:00.000Z",
+              totalInCents: 15_000,
+              seats: [
+                {
+                  id: eventDetails.rows[0].seats[0].id,
+                  rowLabel: "A",
+                  number: 1,
+                  priceInCents: 15_000,
+                },
+              ],
+            }),
+            {
+              status: 201,
+              headers: {
+                "Content-Type": "application/json",
+              },
+            },
+          ),
+        );
+      }
+
+      return Promise.resolve(
+        new Response(null, {
+          status: 404,
+        }),
+      );
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={[`/events/${eventId}`]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Assento A1 disponível",
+      }),
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Continuar para reservar",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        `http://localhost:3333/api/events/${eventId}/reservations`,
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            Authorization: "Bearer valid-access-token",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            seatIds: [eventDetails.rows[0].seats[0].id],
+          }),
+        },
+      );
+    });
+
+    expect(
+      screen.queryByRole("heading", {
+        name: "Entre para continuar",
+      }),
+    ).not.toBeInTheDocument();
   });
 });

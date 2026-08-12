@@ -12,6 +12,12 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { getEvent, type EventDetails } from "../api/events";
+import { createReservation } from "../api/reservations";
+import {
+  readAccessToken,
+  readAuthenticatedUser,
+} from "../session/auth-session";
+import { saveCheckoutReservation } from "../session/checkout-reservation";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -31,6 +37,8 @@ export function EventDetailsPage() {
   const [event, setEvent] = useState<EventDetails | null>(null);
   const [hasError, setHasError] = useState(false);
   const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [reservationError, setReservationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!eventId) {
@@ -76,22 +84,57 @@ export function EventDetailsPage() {
     });
   }
 
-  function continueToReservation() {
-    if (!eventId || selectedSeatIds.length === 0) {
+  async function continueToReservation() {
+    if (!eventId || selectedSeatIds.length === 0 || isSubmitting) {
       return;
     }
 
-    sessionStorage.setItem(
-      "plateia:pending-reservation",
-      JSON.stringify({
+    const authenticatedUser = readAuthenticatedUser();
+    const accessToken = readAccessToken();
+
+    if (!authenticatedUser || !accessToken) {
+      sessionStorage.setItem(
+        "plateia:pending-reservation",
+        JSON.stringify({
+          eventId,
+          seatIds: selectedSeatIds,
+        }),
+      );
+
+      const returnTo = `/events/${eventId}`;
+
+      void navigate(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+      return;
+    }
+
+    if (authenticatedUser.role !== "CUSTOMER") {
+      setReservationError(
+        "Somente clientes podem reservar assentos para este evento.",
+      );
+      return;
+    }
+
+    setReservationError(null);
+    setIsSubmitting(true);
+
+    try {
+      const reservation = await createReservation({
         eventId,
         seatIds: selectedSeatIds,
-      }),
-    );
+        accessToken,
+      });
 
-    const returnTo = `/events/${eventId}`;
+      saveCheckoutReservation(reservation);
+      sessionStorage.removeItem("plateia:pending-reservation");
 
-    void navigate(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+      void navigate(`/checkout/${reservation.id}`);
+    } catch {
+      setReservationError(
+        "Não foi possível reservar os assentos. Verifique a disponibilidade e tente novamente.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   if (!eventId || hasError) {
@@ -289,15 +332,35 @@ export function EventDetailsPage() {
               )}
             </Typography>
 
+            {reservationError && (
+              <Alert severity="error" sx={{ mt: 3 }}>
+                {reservationError}
+              </Alert>
+            )}
+
             <Button
-              disabled={selectedSeatIds.length === 0}
+              disabled={selectedSeatIds.length === 0 || isSubmitting}
               fullWidth
-              onClick={continueToReservation}
+              onClick={() => {
+                void continueToReservation();
+              }}
               sx={{ mt: 3 }}
               type="button"
               variant="contained"
             >
-              Continuar para reservar
+              {isSubmitting ? (
+                <>
+                  <CircularProgress
+                    aria-label="Criando reserva"
+                    color="inherit"
+                    size={20}
+                    sx={{ mr: 1 }}
+                  />
+                  Reservando
+                </>
+              ) : (
+                "Continuar para reservar"
+              )}
             </Button>
 
             <Typography
