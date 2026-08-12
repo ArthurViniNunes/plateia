@@ -19,6 +19,9 @@ import { createEventSchema } from "./create-event-schema.js";
 import { listEventsQuerySchema } from "./list-events-query-schema.js";
 import { listPublicEvents } from "./list-public-events.js";
 import { getPublicEvent } from "./get-public-event.js";
+import { createReservation } from "../reservations/create-reservation.js";
+import { createReservationSchema } from "../reservations/create-reservation-schema.js";
+import { SeatsUnavailableError } from "../reservations/reservation-errors.js";
 
 interface CreateEventsRouterOptions {
   catalogClient: CatalogClient;
@@ -137,6 +140,79 @@ export function createEventsRouter({
             error: {
               code: "TICKETMASTER_UNAVAILABLE",
               message: "Ticketmaster catalog is unavailable",
+            },
+          });
+          return;
+        }
+
+        throw error;
+      }
+    },
+  );
+
+  eventsRouter.post(
+    "/:eventId/reservations",
+    authenticationMiddleware,
+    requireRoles("CUSTOMER"),
+    async (request, response) => {
+      const user = request.authenticatedUser;
+      const eventIdResult = z.uuid().safeParse(request.params.eventId);
+      const bodyResult = createReservationSchema.safeParse(request.body);
+
+      if (!user) {
+        response.status(401).json({
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Authentication required",
+          },
+        });
+        return;
+      }
+
+      if (!eventIdResult.success) {
+        response.status(404).json({
+          error: {
+            code: "EVENT_NOT_FOUND",
+            message: "Event not found",
+          },
+        });
+        return;
+      }
+
+      if (!bodyResult.success) {
+        response.status(400).json({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Invalid request data",
+          },
+        });
+        return;
+      }
+
+      try {
+        const reservation = await createReservation({
+          customerId: user.id,
+          eventId: eventIdResult.data,
+          seatIds: bodyResult.data.seatIds,
+        });
+
+        response.status(201).json(reservation);
+      } catch (error: unknown) {
+        if (error instanceof EventNotFoundError) {
+          response.status(404).json({
+            error: {
+              code: "EVENT_NOT_FOUND",
+              message: "Event not found",
+            },
+          });
+          return;
+        }
+
+        if (error instanceof SeatsUnavailableError) {
+          response.status(409).json({
+            error: {
+              code: "SEATS_UNAVAILABLE",
+              message: "Selected seats are unavailable",
             },
           });
           return;

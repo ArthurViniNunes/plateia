@@ -16,14 +16,15 @@ enum Role {
 }
 
 model User {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name            String
-  email           String   @unique
-  passwordHash    String   @map("password_hash")
-  role            Role     @default(CUSTOMER)
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
-  organizedEvents Event[]  @relation("EventOrganizer")
+  email           String        @unique
+  passwordHash    String        @map("password_hash")
+  role            Role          @default(CUSTOMER)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organizedEvents Event[]       @relation("EventOrganizer")
+  reservations    Reservation[] @relation("CustomerReservations")
 
   @@map("users")
 }
@@ -37,23 +38,24 @@ enum EventStatus {
 }
 
 model Event {
-  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizerId      String      @map("organizer_id") @db.Uuid
-  ticketmasterId   String      @map("ticketmaster_id")
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizerId      String        @map("organizer_id") @db.Uuid
+  ticketmasterId   String        @map("ticketmaster_id")
   title            String
-  imageUrl         String?     @map("image_url")
+  imageUrl         String?       @map("image_url")
   classification   String?
-  externalUrl      String?     @map("external_url")
-  catalogFetchedAt DateTime    @map("catalog_fetched_at") @db.Timestamptz(3)
-  startsAt         DateTime    @map("starts_at") @db.Timestamptz(3)
-  venueName        String      @map("venue_name")
+  externalUrl      String?       @map("external_url")
+  catalogFetchedAt DateTime      @map("catalog_fetched_at") @db.Timestamptz(3)
+  startsAt         DateTime      @map("starts_at") @db.Timestamptz(3)
+  venueName        String        @map("venue_name")
   address          String
   city             String
   state            String
-  priceInCents     Int         @map("price_in_cents")
-  status           EventStatus @default(DRAFT)
-  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  priceInCents     Int           @map("price_in_cents")
+  status           EventStatus   @default(DRAFT)
+  reservations     Reservation[]
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   organizer User   @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: Restrict)
   seats     Seat[]
@@ -72,8 +74,52 @@ model Seat {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event           Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  reservationSeat ReservationSeat?
 
   @@unique([eventId, rowLabel, number], map: "seats_event_row_number_key")
   @@map("seats")
+}
+
+enum ReservationStatus {
+  PENDING
+  PAID
+  REJECTED
+  EXPIRED
+
+  @@map("reservation_status")
+}
+
+model Reservation {
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId   String            @map("customer_id") @db.Uuid
+  eventId      String            @map("event_id") @db.Uuid
+  status       ReservationStatus @default(PENDING)
+  expiresAt    DateTime          @map("expires_at") @db.Timestamptz(3)
+  totalInCents Int               @map("total_in_cents")
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  customer User              @relation("CustomerReservations", fields: [customerId], references: [id], onDelete: Restrict)
+  event    Event             @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  seats    ReservationSeat[]
+
+  @@index([customerId, createdAt], map: "reservations_customer_id_created_at_idx")
+  @@index([eventId], map: "reservations_event_id_idx")
+  @@index([status, expiresAt], map: "reservations_status_expires_at_idx")
+  @@map("reservations")
+}
+
+model ReservationSeat {
+  reservationId String   @map("reservation_id") @db.Uuid
+  seatId        String   @map("seat_id") @db.Uuid
+  priceInCents  Int      @map("price_in_cents")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  seat        Seat        @relation(fields: [seatId], references: [id], onDelete: Restrict)
+
+  @@id([reservationId, seatId])
+  @@unique([seatId], map: "reservation_seats_seat_id_key")
+  @@map("reservation_seats")
 }
