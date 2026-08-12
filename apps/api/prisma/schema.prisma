@@ -25,6 +25,7 @@ model User {
   updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   organizedEvents Event[]       @relation("EventOrganizer")
   reservations    Reservation[] @relation("CustomerReservations")
+  tickets         Ticket[]      @relation("CustomerTickets")
 
   @@map("users")
 }
@@ -54,6 +55,7 @@ model Event {
   priceInCents     Int           @map("price_in_cents")
   status           EventStatus   @default(DRAFT)
   reservations     Reservation[]
+  tickets          Ticket[]
   createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -71,6 +73,7 @@ model Seat {
   eventId   String   @map("event_id") @db.Uuid
   rowLabel  String   @map("row_label")
   number    Int
+  ticket    Ticket?
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -97,6 +100,7 @@ model Reservation {
   status       ReservationStatus @default(PENDING)
   expiresAt    DateTime          @map("expires_at") @db.Timestamptz(3)
   totalInCents Int               @map("total_in_cents")
+  tickets      Ticket[]
   createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -122,4 +126,26 @@ model ReservationSeat {
   @@id([reservationId, seatId])
   @@unique([seatId], map: "reservation_seats_seat_id_key")
   @@map("reservation_seats")
+}
+
+model Ticket {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reservationId String    @map("reservation_id") @db.Uuid
+  customerId    String    @map("customer_id") @db.Uuid
+  eventId       String    @map("event_id") @db.Uuid
+  seatId        String    @unique @map("seat_id") @db.Uuid
+  code          String    @unique
+  usedAt        DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  customer    User        @relation("CustomerTickets", fields: [customerId], references: [id], onDelete: Restrict)
+  event       Event       @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  seat        Seat        @relation(fields: [seatId], references: [id], onDelete: Restrict)
+
+  @@index([reservationId], map: "tickets_reservation_id_idx")
+  @@index([customerId, createdAt], map: "tickets_customer_id_created_at_idx")
+  @@index([eventId], map: "tickets_event_id_idx")
+  @@map("tickets")
 }

@@ -7,6 +7,8 @@ import {
 } from "./catalog/ticketmaster-client.js";
 import { createCatalogRouter } from "./catalog/catalog-router.js";
 import { createEventsRouter } from "./events/events-router.js";
+import { createPaymentsRouter } from "./payments/payments-router.js";
+import { createTicketsRouter } from "./tickets/tickets-router.js";
 
 interface CreateAppOptions {
   corsOrigin: string;
@@ -57,6 +59,20 @@ export function createApp({
     "/api/events",
     createEventsRouter({
       catalogClient,
+      jwtSecret,
+    }),
+  );
+
+  app.use(
+    "/api/reservations",
+    createPaymentsRouter({
+      jwtSecret,
+    }),
+  );
+
+  app.use(
+    "/api/tickets",
+    createTicketsRouter({
       jwtSecret,
     }),
   );

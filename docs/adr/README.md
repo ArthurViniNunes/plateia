@@ -31,6 +31,7 @@ Este diretório reúne os Architecture Decision Records (ADRs) do Plateia. O obj
 | [0009](./0009-validar-configuracao-e-falhar-rapidamente.md)      | Validar configuração e falhar rapidamente             | Aceito |
 | [0010](./0010-adotar-jwt-e-bcrypt-na-autenticacao.md)            | Adotar JWT e bcrypt na autenticação                   | Aceito |
 | [0011](./0011-modelar-eventos-e-integrar-ticketmaster.md)        | Modelar eventos e integrar o catálogo da Ticketmaster | Aceito |
+| [0012](./0012-simular-pagamento-e-emitir-ingressos.md)           | Simular pagamentos e emitir ingressos compartilháveis | Aceito |
 
 ## Decisões ainda pendentes
 
