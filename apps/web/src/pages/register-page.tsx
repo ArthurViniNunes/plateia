@@ -12,13 +12,7 @@ import {
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
-import { InvalidCredentialsError, login } from "../api/auth";
-import { createReservation } from "../api/reservations";
-import {
-  clearPendingReservation,
-  readPendingReservation,
-} from "../session/pending-reservation";
-import { saveCheckoutReservation } from "../session/checkout-reservation";
+import { EmailAlreadyRegisteredError, register } from "../api/auth";
 
 function getSafeReturnTo(returnTo: string | null) {
   if (!returnTo || !returnTo.startsWith("/") || returnTo.startsWith("//")) {
@@ -28,14 +22,18 @@ function getSafeReturnTo(returnTo: string | null) {
   return returnTo;
 }
 
-export function LoginPage() {
+export function RegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const returnTo = getSafeReturnTo(searchParams.get("returnTo"));
+  const loginPath = `/login?returnTo=${encodeURIComponent(returnTo)}`;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,56 +42,27 @@ export function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const authentication = await login({
+      await register({
+        name,
         email,
         password,
       });
 
-      sessionStorage.setItem("plateia:access-token", authentication.token);
-
-      const pendingReservation = readPendingReservation();
-
-      if (pendingReservation) {
-        try {
-          const reservation = await createReservation({
-            eventId: pendingReservation.eventId,
-            seatIds: pendingReservation.seatIds,
-            accessToken: authentication.token,
-          });
-
-          saveCheckoutReservation(reservation);
-          clearPendingReservation();
-
-          void navigate(`/checkout/${reservation.id}`, {
-            replace: true,
-          });
-
-          return;
-        } catch {
-          setErrorMessage(
-            "Login realizado, mas não foi possível reservar os assentos. Tente novamente.",
-          );
-
-          return;
-        }
-      }
-
-      void navigate(returnTo, {
+      void navigate(loginPath, {
         replace: true,
       });
     } catch (error: unknown) {
-      if (error instanceof InvalidCredentialsError) {
+      if (error instanceof EmailAlreadyRegisteredError) {
         setErrorMessage(error.message);
       } else {
-        setErrorMessage("Não foi possível entrar agora. Tente novamente.");
+        setErrorMessage(
+          "Não foi possível criar sua conta agora. Tente novamente.",
+        );
       }
     } finally {
       setIsSubmitting(false);
     }
   }
-
-  const returnTo = getSafeReturnTo(searchParams.get("returnTo"));
-  const registerPath = `/register?returnTo=${encodeURIComponent(returnTo)}`;
 
   return (
     <Box
@@ -135,15 +104,29 @@ export function LoginPage() {
                 </Typography>
 
                 <Typography component="h1" variant="h3" sx={{ mt: 1 }}>
-                  Entre para continuar
+                  Crie sua conta
                 </Typography>
 
                 <Typography color="text.secondary" sx={{ mt: 2 }}>
-                  Sua seleção está guardada. Entre para reservar os lugares.
+                  Cadastre-se para reservar seus lugares e acessar seus
+                  ingressos.
                 </Typography>
               </Box>
 
               {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
+
+              <TextField
+                autoComplete="name"
+                disabled={isSubmitting}
+                label="Nome completo"
+                name="name"
+                onChange={(event) => {
+                  setName(event.target.value);
+                }}
+                required
+                type="text"
+                value={name}
+              />
 
               <TextField
                 autoComplete="email"
@@ -159,8 +142,9 @@ export function LoginPage() {
               />
 
               <TextField
-                autoComplete="current-password"
+                autoComplete="new-password"
                 disabled={isSubmitting}
+                helperText="Use entre 8 caracteres e 72 bytes."
                 label="Senha"
                 name="password"
                 onChange={(event) => {
@@ -180,20 +164,20 @@ export function LoginPage() {
                 {isSubmitting ? (
                   <>
                     <CircularProgress
-                      aria-label="Autenticando"
+                      aria-label="Criando conta"
                       color="inherit"
                       size={20}
                       sx={{ mr: 1 }}
                     />
-                    Entrando
+                    Criando conta
                   </>
                 ) : (
-                  "Entrar"
+                  "Criar conta"
                 )}
               </Button>
 
-              <Button component={Link} to={registerPath} variant="text">
-                Criar uma conta
+              <Button component={Link} to={loginPath} variant="text">
+                Já tenho uma conta
               </Button>
             </Stack>
           </Box>

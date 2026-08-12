@@ -6,6 +6,7 @@ import { EventsPage } from "./pages/events-page";
 import { LoginPage } from "./pages/login-page";
 import { SharedTicketPage } from "./pages/shared-ticket-page";
 import { TicketsPage } from "./pages/tickets-page";
+import { RegisterPage } from "./pages/register-page";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
       <Route path="/checkout/:reservationId" element={<CheckoutPage />} />
       <Route path="/tickets" element={<TicketsPage />} />
       <Route path="/tickets/:code" element={<SharedTicketPage />} />
+      <Route path="/register" element={<RegisterPage />} />
     </Routes>
   );
 }
