@@ -575,24 +575,48 @@ Outras limitações deliberadas:
 - a câmera depende de permissão e contexto seguro;
 - a reserva expirada é reconhecida nas operações críticas, sem depender exclusivamente de um processo agendado.
 
-## Deploy
+## Ambientes publicados
 
-O deploy não é obrigatório para executar ou avaliar o projeto localmente.
+O Plateia também está disponível para avaliação em produção:
 
-Quando publicado, registre aqui:
+| Serviço        | Plataforma            | Endereço                                                                             |
+| -------------- | --------------------- | ------------------------------------------------------------------------------------ |
+| Aplicação web  | Vercel                | [plateia-ingressos.vercel.app](https://plateia-ingressos.vercel.app/)                |
+| API            | Render                | [plateia-api-31dp.onrender.com](https://plateia-api-31dp.onrender.com/)              |
+| Health check   | Render                | [plateia-api-31dp.onrender.com/health](https://plateia-api-31dp.onrender.com/health) |
+| Banco de dados | PostgreSQL gerenciado | Acesso privado                                                                       |
 
-- Front-end: `a definir`;
-- API: `a definir`;
-- Banco de dados: `a definir`.
+A aplicação web está configurada para consumir a API publicada. A API restringe o CORS à origem do front-end e utiliza variáveis de ambiente próprias para o banco de dados, JWT e integração com a Ticketmaster.
 
-As variáveis de ambiente de produção devem utilizar:
+### Avaliação em produção
 
-- URLs públicas corretas;
-- origem CORS exata;
-- segredo JWT exclusivo;
-- credenciais de banco exclusivas;
-- chave da Ticketmaster configurada somente na API;
-- conexão PostgreSQL protegida.
+As contas apresentadas na seção [Dados de demonstração](#dados-de-demonstração) também podem ser utilizadas no ambiente publicado.
+
+Na primeira requisição após um período de inatividade, a API hospedada no Render pode apresentar um tempo de resposta maior devido à inicialização do serviço. Após esse primeiro acesso, as requisições seguintes tendem a responder normalmente.
+
+Para despertar a API antes da demonstração, acesse:
+
+```text
+https://plateia-api-31dp.onrender.com/health
+```
+
+Resposta esperada:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+### Atualização dos ambientes
+
+Os deploys estão vinculados ao repositório:
+
+- novos pushes na branch principal acionam a publicação da API no Render;
+- novos pushes na branch principal acionam a publicação do front-end na Vercel;
+- as verificações de qualidade são executadas pelo GitHub Actions.
+
+Os segredos e as credenciais de produção não são versionados. Eles são configurados diretamente nas plataformas de hospedagem.
 
 ## Licença
 
