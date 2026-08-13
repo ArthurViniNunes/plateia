@@ -94,6 +94,89 @@ describe("LoginPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("authenticates values filled by the browser without requiring a second submit", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          token: "valid-access-token",
+          user: {
+            id: "1c8ef142-4fcb-4f8a-a108-55ee12e2f001",
+            name: "Cliente Plateia",
+            email: "customer@plateia.local",
+            role: "CUSTOMER",
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      ),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={["/login"]}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<h1>Agenda Plateia</h1>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const emailInput = screen.getByRole("textbox", {
+      name: "E-mail",
+    });
+
+    const passwordInput = screen.getByLabelText(/^Senha/);
+
+    const valueDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    );
+
+    // Simula o preenchimento automático sem disparar um evento change do React.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const valueSetter = valueDescriptor?.set;
+
+    if (!valueSetter) {
+      throw new Error("HTML input value setter is unavailable");
+    }
+
+    Reflect.apply(valueSetter, emailInput, ["customer@plateia.local"]);
+    Reflect.apply(valueSetter, passwordInput, ["Plateia123!"]);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Entrar",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledOnce();
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3333/api/auth/login",
+      expect.objectContaining({
+        body: JSON.stringify({
+          email: "customer@plateia.local",
+          password: "Plateia123!",
+        }),
+      }),
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Agenda Plateia",
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("creates the pending reservation after login and opens the checkout", async () => {
     const reservationId = "8c8ef142-4fcb-4f8a-a108-55ee12e2f008";
     const firstSeatId = "1c8ef142-4fcb-4f8a-a108-55ee12e2f001";

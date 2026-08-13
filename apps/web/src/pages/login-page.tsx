@@ -29,17 +29,25 @@ function getSafeReturnTo(returnTo: string | null) {
   return returnTo;
 }
 
+function readFormString(formData: FormData, fieldName: string) {
+  const value = formData.get(fieldName);
+
+  return typeof value === "string" ? value : "";
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const email = readFormString(formData, "email");
+    const password = readFormString(formData, "password");
 
     setErrorMessage(null);
     setIsSubmitting(true);
@@ -151,12 +159,8 @@ export function LoginPage() {
                 disabled={isSubmitting}
                 label="E-mail"
                 name="email"
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                }}
                 required
                 type="email"
-                value={email}
               />
 
               <TextField
@@ -164,12 +168,8 @@ export function LoginPage() {
                 disabled={isSubmitting}
                 label="Senha"
                 name="password"
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                }}
                 required
                 type="password"
-                value={password}
               />
 
               <Button
