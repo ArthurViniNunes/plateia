@@ -8,11 +8,11 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { getEvent, type EventDetails } from "../api/events";
-import { createReservation } from "../api/reservations";
+import { createReservation, SeatsUnavailableError } from "../api/reservations";
 import {
   readAccessToken,
   readAuthenticatedUser,
@@ -30,6 +30,12 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   timeZone: "America/Fortaleza",
 });
 
+const seatStatusLabels = {
+  AVAILABLE: "disponível",
+  BLOCKED: "temporariamente reservado",
+  SOLD: "vendido",
+} as const;
+
 export function EventDetailsPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -40,33 +46,69 @@ export function EventDetailsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reservationError, setReservationError] = useState<string | null>(null);
 
+  const applyEventUpdate = useCallback((updatedEvent: EventDetails) => {
+    setEvent(updatedEvent);
+
+    const availableSeatIds = new Set(
+      updatedEvent.rows.flatMap((row) =>
+        row.seats
+          .filter((seat) => seat.status === "AVAILABLE")
+          .map((seat) => seat.id),
+      ),
+    );
+
+    setSelectedSeatIds((currentSeatIds) =>
+      currentSeatIds.filter((seatId) => availableSeatIds.has(seatId)),
+    );
+  }, []);
+
   useEffect(() => {
     if (!eventId) {
       return;
     }
 
     let isActive = true;
+    let hasLoadedEvent = false;
+    let requestInFlight = false;
 
     async function loadEvent(id: string) {
+      if (requestInFlight) {
+        return;
+      }
+
+      requestInFlight = true;
+
       try {
         const response = await getEvent(id);
 
-        if (isActive) {
-          setEvent(response);
+        if (!isActive) {
+          return;
         }
+
+        hasLoadedEvent = true;
+        setHasError(false);
+
+        applyEventUpdate(response);
       } catch {
-        if (isActive) {
+        if (isActive && !hasLoadedEvent) {
           setHasError(true);
         }
+      } finally {
+        requestInFlight = false;
       }
     }
 
     void loadEvent(eventId);
 
+    const refreshInterval = window.setInterval(() => {
+      void loadEvent(eventId);
+    }, 10_000);
+
     return () => {
       isActive = false;
+      window.clearInterval(refreshInterval);
     };
-  }, [eventId]);
+  }, [eventId, applyEventUpdate]);
 
   function toggleSeat(seatId: string) {
     setSelectedSeatIds((currentSeatIds) => {
@@ -128,7 +170,22 @@ export function EventDetailsPage() {
       sessionStorage.removeItem("plateia:pending-reservation");
 
       void navigate(`/checkout/${reservation.id}`);
-    } catch {
+    } catch (error: unknown) {
+      if (error instanceof SeatsUnavailableError) {
+        try {
+          const updatedEvent = await getEvent(eventId);
+
+          applyEventUpdate(updatedEvent);
+        } catch {
+          // A mensagem de conflito permanece útil mesmo se a atualização falhar.
+        }
+
+        setReservationError(
+          "Um dos assentos selecionados acabou de ficar indisponível. Escolha novamente.",
+        );
+        return;
+      }
+
       setReservationError(
         "Não foi possível reservar os assentos. Verifique a disponibilidade e tente novamente.",
       );
@@ -230,6 +287,67 @@ export function EventDetailsPage() {
               <Typography color="text.secondary" sx={{ mt: 1 }}>
                 Selecione até quatro assentos para continuar.
               </Typography>
+
+              <Stack
+                aria-label="Legenda dos assentos"
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
+                sx={{ mt: 2 }}
+              >
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignItems: "center" }}
+                >
+                  <Box
+                    aria-hidden="true"
+                    sx={{
+                      border: "1px solid",
+                      borderColor: "primary.main",
+                      height: 16,
+                      width: 16,
+                    }}
+                  />
+                  <Typography variant="caption">Disponível</Typography>
+                </Stack>
+
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignItems: "center" }}
+                >
+                  <Box
+                    aria-hidden="true"
+                    sx={{
+                      bgcolor: "action.hover",
+                      border: "1px solid",
+                      borderColor: "divider",
+                      height: 16,
+                      width: 16,
+                    }}
+                  />
+                  <Typography variant="caption">
+                    Temporariamente reservado
+                  </Typography>
+                </Stack>
+
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignItems: "center" }}
+                >
+                  <Box
+                    aria-hidden="true"
+                    sx={{
+                      bgcolor: "primary.main",
+                      height: 16,
+                      opacity: 0.45,
+                      width: 16,
+                    }}
+                  />
+                  <Typography variant="caption">Vendido</Typography>
+                </Stack>
+              </Stack>
             </Box>
 
             <Box
@@ -270,14 +388,19 @@ export function EventDetailsPage() {
                     }}
                   >
                     {row.seats.map((seat) => {
-                      const isSelected = selectedSeatIds.includes(seat.id);
+                      const isAvailable = seat.status === "AVAILABLE";
+                      const isSelected =
+                        isAvailable && selectedSeatIds.includes(seat.id);
 
                       return (
                         <Button
                           aria-label={`Assento ${row.label}${seat.number} ${
-                            isSelected ? "selecionado" : "disponível"
+                            isSelected
+                              ? "selecionado"
+                              : seatStatusLabels[seat.status]
                           }`}
                           aria-pressed={isSelected}
+                          disabled={!isAvailable}
                           key={seat.id}
                           onClick={() => {
                             toggleSeat(seat.id);
@@ -288,6 +411,21 @@ export function EventDetailsPage() {
                             height: 44,
                             minWidth: 44,
                             width: 44,
+                            ...(seat.status === "BLOCKED" && {
+                              "&.Mui-disabled": {
+                                bgcolor: "action.hover",
+                                borderColor: "divider",
+                                color: "text.secondary",
+                              },
+                            }),
+                            ...(seat.status === "SOLD" && {
+                              "&.Mui-disabled": {
+                                bgcolor: "primary.main",
+                                borderColor: "primary.main",
+                                color: "primary.contrastText",
+                                opacity: 0.45,
+                              },
+                            }),
                           }}
                         >
                           {seat.number}

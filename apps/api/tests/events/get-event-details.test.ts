@@ -50,7 +50,7 @@ const eventDetailsSchema = z.object({
         z.object({
           id: z.uuid(),
           number: z.number().int().positive(),
-          status: z.literal("AVAILABLE"),
+          status: z.enum(["AVAILABLE", "BLOCKED", "SOLD"]),
         }),
       ),
     }),
@@ -178,6 +178,136 @@ describe("GET /api/events/:eventId", () => {
             )?.id,
             number: 1,
             status: "AVAILABLE",
+          },
+          {
+            id: event.seats.find(
+              ({ rowLabel, number }) => rowLabel === "B" && number === 2,
+            )?.id,
+            number: 2,
+            status: "AVAILABLE",
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("reports blocked, sold and available seats", async () => {
+    const event = await createEvent();
+
+    const customer = await prisma.user.create({
+      data: {
+        name: "Cliente Plateia",
+        email: "customer@plateia.local",
+        passwordHash: "not-used-by-public-event-tests",
+        role: "CUSTOMER",
+      },
+    });
+
+    const blockedSeat = event.seats.find(
+      ({ rowLabel, number }) => rowLabel === "A" && number === 1,
+    );
+    const expiredSeat = event.seats.find(
+      ({ rowLabel, number }) => rowLabel === "A" && number === 2,
+    );
+    const soldSeat = event.seats.find(
+      ({ rowLabel, number }) => rowLabel === "B" && number === 1,
+    );
+
+    expect(blockedSeat).toBeDefined();
+    expect(expiredSeat).toBeDefined();
+    expect(soldSeat).toBeDefined();
+
+    if (!blockedSeat || !expiredSeat || !soldSeat) {
+      throw new Error("Expected event seats were not created");
+    }
+
+    await prisma.reservation.create({
+      data: {
+        customerId: customer.id,
+        eventId: event.id,
+        status: "PENDING",
+        expiresAt: new Date(Date.now() + 10 * 60 * 1_000),
+        totalInCents: 15_000,
+        seats: {
+          create: {
+            seatId: blockedSeat.id,
+            priceInCents: 15_000,
+          },
+        },
+      },
+    });
+
+    await prisma.reservation.create({
+      data: {
+        customerId: customer.id,
+        eventId: event.id,
+        status: "PENDING",
+        expiresAt: new Date(Date.now() - 60 * 1_000),
+        totalInCents: 15_000,
+        seats: {
+          create: {
+            seatId: expiredSeat.id,
+            priceInCents: 15_000,
+          },
+        },
+      },
+    });
+
+    const paidReservation = await prisma.reservation.create({
+      data: {
+        customerId: customer.id,
+        eventId: event.id,
+        status: "PAID",
+        expiresAt: new Date(Date.now() + 10 * 60 * 1_000),
+        totalInCents: 15_000,
+        seats: {
+          create: {
+            seatId: soldSeat.id,
+            priceInCents: 15_000,
+          },
+        },
+      },
+    });
+
+    await prisma.ticket.create({
+      data: {
+        reservationId: paidReservation.id,
+        customerId: customer.id,
+        eventId: event.id,
+        seatId: soldSeat.id,
+        code: crypto.randomUUID(),
+      },
+    });
+
+    const response = await request(app).get(`/api/events/${event.id}`);
+
+    expect(response.status).toBe(200);
+
+    const body = eventDetailsSchema.parse(response.body);
+
+    expect(body.rows).toEqual([
+      {
+        label: "A",
+        seats: [
+          {
+            id: blockedSeat.id,
+            number: 1,
+            status: "BLOCKED",
+          },
+          {
+            id: expiredSeat.id,
+            number: 2,
+            status: "AVAILABLE",
+          },
+        ],
+      },
+      {
+        label: "B",
+        seats: [
+          {
+            id: soldSeat.id,
+            number: 1,
+            status: "SOLD",
           },
           {
             id: event.seats.find(

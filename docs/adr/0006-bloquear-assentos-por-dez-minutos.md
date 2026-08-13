@@ -198,6 +198,18 @@ O teste concorrente deverá demonstrar que, entre duas tentativas simultâneas p
 
 Os arquivos que compartilham o banco de testes continuarão sendo executados sequencialmente. A limpeza relacional centralizada removerá reservas antes de eventos e usuários.
 
+A consulta pública do mapa classificará cada assento como:
+
+- `AVAILABLE`, quando puder ser selecionado;
+- `BLOCKED`, quando pertencer a uma reserva `PENDING` ainda não expirada;
+- `SOLD`, quando já possuir ingresso emitido.
+
+Reservas pendentes expiradas não tornarão o assento indisponível, mesmo que a limpeza dos registros ainda não tenha ocorrido.
+
+No front-end, assentos bloqueados e vendidos serão apresentados com estados visuais distintos e permanecerão desabilitados. Enquanto o mapa estiver aberto, sua disponibilidade será atualizada a cada dez segundos. Se um conflito de concorrência ainda ocorrer entre duas atualizações, a resposta `409 Conflict` provocará uma atualização imediata do mapa, removerá da seleção os lugares que deixaram de estar disponíveis e orientará o cliente a escolher novamente.
+
+Essa atualização periódica reduz a defasagem visual, mas não substitui a validação transacional da API. O banco de dados permanece como fonte autoritativa para impedir que dois clientes reservem o mesmo assento.
+
 ## Consequências positivas
 
 - impede reservas simultâneas do mesmo assento;

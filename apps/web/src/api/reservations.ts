@@ -22,6 +22,13 @@ const reservationResponseSchema = z
   })
   .strict();
 
+export class SeatsUnavailableError extends Error {
+  constructor() {
+    super("Selected seats are unavailable");
+    this.name = "SeatsUnavailableError";
+  }
+}
+
 interface CreateReservationInput {
   eventId: string;
   seatIds: string[];
@@ -49,6 +56,10 @@ export async function createReservation({
       }),
     },
   );
+
+  if (response.status === 409) {
+    throw new SeatsUnavailableError();
+  }
 
   if (!response.ok) {
     throw new Error("Não foi possível reservar os assentos.");

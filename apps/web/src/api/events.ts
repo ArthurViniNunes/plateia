@@ -39,7 +39,7 @@ const eventDetailsSchema = eventSchema.extend({
         z.object({
           id: z.uuid(),
           number: z.number().int().positive(),
-          status: z.literal("AVAILABLE"),
+          status: z.enum(["AVAILABLE", "BLOCKED", "SOLD"]),
         }),
       ),
     }),

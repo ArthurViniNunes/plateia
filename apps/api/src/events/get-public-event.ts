@@ -2,13 +2,17 @@ import { prisma } from "../database/prisma.js";
 import { EventNotFoundError } from "./event-errors.js";
 import { toEventResponse } from "./event-response.js";
 
+type SeatAvailability = "AVAILABLE" | "BLOCKED" | "SOLD";
+
 export async function getPublicEvent(eventId: string) {
+  const now = new Date();
+
   const event = await prisma.event.findFirst({
     where: {
       id: eventId,
       status: "PUBLISHED",
       startsAt: {
-        gt: new Date(),
+        gt: now,
       },
     },
     include: {
@@ -21,6 +25,23 @@ export async function getPublicEvent(eventId: string) {
             number: "asc",
           },
         ],
+        include: {
+          reservationSeat: {
+            select: {
+              reservation: {
+                select: {
+                  status: true,
+                  expiresAt: true,
+                },
+              },
+            },
+          },
+          ticket: {
+            select: {
+              id: true,
+            },
+          },
+        },
       },
       _count: {
         select: {
@@ -39,17 +60,29 @@ export async function getPublicEvent(eventId: string) {
     Array<{
       id: string;
       number: number;
-      status: "AVAILABLE";
+      status: SeatAvailability;
     }>
   >();
 
   for (const seat of event.seats) {
     const seats = rows.get(seat.rowLabel) ?? [];
+    const reservation = seat.reservationSeat?.reservation;
+
+    let status: SeatAvailability = "AVAILABLE";
+
+    if (seat.ticket) {
+      status = "SOLD";
+    } else if (
+      reservation?.status === "PENDING" &&
+      reservation.expiresAt > now
+    ) {
+      status = "BLOCKED";
+    }
 
     seats.push({
       id: seat.id,
       number: seat.number,
-      status: "AVAILABLE",
+      status,
     });
 
     rows.set(seat.rowLabel, seats);

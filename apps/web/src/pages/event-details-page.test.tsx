@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -324,5 +324,237 @@ describe("event details", () => {
         name: "Entre para continuar",
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows blocked and sold seats as unavailable", async () => {
+    const detailsWithUnavailableSeats = {
+      ...eventDetails,
+      rows: [
+        {
+          label: "A",
+          seats: [
+            eventDetails.rows[0].seats[0],
+            {
+              ...eventDetails.rows[0].seats[1],
+              status: "BLOCKED",
+            },
+          ],
+        },
+        {
+          label: "B",
+          seats: [
+            {
+              ...eventDetails.rows[1].seats[0],
+              status: "SOLD",
+            },
+          ],
+        },
+      ],
+    };
+
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify(detailsWithUnavailableSeats), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <MemoryRouter initialEntries={[`/events/${eventId}`]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("button", {
+        name: "Assento A1 disponível",
+      }),
+    ).toBeEnabled();
+
+    expect(
+      screen.getByRole("button", {
+        name: "Assento A2 temporariamente reservado",
+      }),
+    ).toBeDisabled();
+
+    expect(
+      screen.getByRole("button", {
+        name: "Assento B1 vendido",
+      }),
+    ).toBeDisabled();
+
+    expect(screen.getByText("Temporariamente reservado")).toBeInTheDocument();
+    expect(screen.getByText("Vendido")).toBeInTheDocument();
+  });
+
+  it("refreshes seat availability while the map remains open", async () => {
+    vi.useFakeTimers();
+
+    const detailsWithBlockedSeat = {
+      ...eventDetails,
+      rows: [
+        {
+          label: "A",
+          seats: [
+            eventDetails.rows[0].seats[0],
+            {
+              ...eventDetails.rows[0].seats[1],
+              status: "BLOCKED",
+            },
+          ],
+        },
+        eventDetails.rows[1],
+      ],
+    };
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(eventDetails), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(detailsWithBlockedSeat), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }),
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <MemoryRouter initialEntries={[`/events/${eventId}`]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.getByRole("button", {
+        name: "Assento A2 disponível",
+      }),
+    ).toBeEnabled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+
+    expect(
+      screen.getByRole("button", {
+        name: "Assento A2 temporariamente reservado",
+      }),
+    ).toBeDisabled();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("refreshes the map immediately when a selected seat becomes unavailable", async () => {
+    saveAuthenticatedSession("valid-access-token", {
+      id: "4c8ef142-4fcb-4f8a-a108-55ee12e2f004",
+      name: "Cliente Plateia",
+      email: "customer@plateia.local",
+      role: "CUSTOMER",
+    });
+
+    const detailsWithBlockedSeat = {
+      ...eventDetails,
+      rows: [
+        {
+          label: "A",
+          seats: [
+            {
+              ...eventDetails.rows[0].seats[0],
+              status: "BLOCKED",
+            },
+            eventDetails.rows[0].seats[1],
+          ],
+        },
+        eventDetails.rows[1],
+      ],
+    };
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(eventDetails), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              code: "SEATS_UNAVAILABLE",
+              message: "Selected seats are unavailable",
+            },
+          }),
+          {
+            status: 409,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(detailsWithBlockedSeat), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }),
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={[`/events/${eventId}`]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Assento A1 disponível",
+      }),
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Continuar para reservar",
+      }),
+    );
+
+    expect(
+      await screen.findByText(
+        "Um dos assentos selecionados acabou de ficar indisponível. Escolha novamente.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", {
+        name: "Assento A1 temporariamente reservado",
+      }),
+    ).toBeDisabled();
+
+    expect(screen.getByText("Nenhum assento selecionado")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });
