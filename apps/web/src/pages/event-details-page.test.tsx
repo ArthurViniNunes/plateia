@@ -74,6 +74,7 @@ function getRequestUrl(input: RequestInfo | URL) {
 
 describe("event details", () => {
   afterEach(() => {
+    vi.useRealTimers();
     fetchMock.mockReset();
     vi.unstubAllGlobals();
   });
