@@ -1,7 +1,7 @@
 import LogoutIcon from "@mui/icons-material/Logout";
 import { AppBar, Box, Button, Container, Toolbar } from "@mui/material";
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import {
   clearAuthenticatedSession,
@@ -9,8 +9,48 @@ import {
   subscribeToAuthenticatedSession,
 } from "../session/auth-session";
 
+function Brand() {
+  return (
+    <Box
+      aria-label="Plateia"
+      component={Link}
+      to="/"
+      sx={{
+        alignItems: "center",
+        display: "inline-flex",
+        gap: 1.25,
+        textDecoration: "none",
+      }}
+    >
+      <Box
+        aria-hidden="true"
+        sx={{
+          bgcolor: "secondary.main",
+          borderRadius: "50% 50% 6% 50%",
+          height: 30,
+          transform: "rotate(-12deg)",
+          width: 30,
+        }}
+      />
+      <Box
+        component="span"
+        sx={{
+          color: "common.white",
+          fontFamily: '"Archivo Black", sans-serif',
+          fontSize: { xs: "1.12rem", sm: "1.35rem" },
+          letterSpacing: "-0.055em",
+          lineHeight: 1,
+        }}
+      >
+        PLATEIA
+      </Box>
+    </Box>
+  );
+}
+
 export function AppNavigation() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(() => readAuthenticatedUser());
 
   useEffect(() => {
@@ -21,45 +61,38 @@ export function AppNavigation() {
 
   function handleLogout() {
     clearAuthenticatedSession();
-
-    void navigate("/login", {
-      replace: true,
-    });
+    void navigate("/login", { replace: true });
   }
+
+  const accountLink =
+    user?.role === "CUSTOMER"
+      ? { label: "Meus ingressos", to: "/tickets" }
+      : user?.role === "ORGANIZER"
+        ? { label: "Gerenciar eventos", to: "/organizer/events" }
+        : user?.role === "GATEKEEPER"
+          ? { label: "Portaria", to: "/gate" }
+          : null;
 
   return (
     <AppBar
-      color="transparent"
       elevation={0}
-      position="static"
+      position="sticky"
       sx={{
-        bgcolor: "background.paper",
-        borderBottom: "1px solid",
-        borderColor: "divider",
+        bgcolor: "#0a0a0a",
+        borderBottom: "1px solid rgba(255,255,255,0.2)",
+        color: "common.white",
       }}
     >
-      <Container maxWidth="lg">
+      <Container maxWidth={false}>
         <Toolbar
           disableGutters
           sx={{
-            gap: 1,
+            gap: 2,
             justifyContent: "space-between",
-            minHeight: 72,
+            minHeight: { xs: 64, sm: 72 },
           }}
         >
-          <Button
-            aria-label="Plateia"
-            component={Link}
-            to="/"
-            sx={{
-              color: "primary.main",
-              fontSize: "1.25rem",
-              fontWeight: 800,
-              letterSpacing: "0.08em",
-            }}
-          >
-            Plateia
-          </Button>
+          <Brand />
 
           <Box
             component="nav"
@@ -67,39 +100,65 @@ export function AppNavigation() {
             sx={{
               alignItems: "center",
               display: "flex",
-              flexWrap: "wrap",
-              gap: 1,
-              justifyContent: "flex-end",
+              gap: { xs: 0, sm: 1 },
             }}
           >
-            {user?.role === "CUSTOMER" && (
-              <Button component={Link} to="/tickets">
-                Meus ingressos
-              </Button>
-            )}
+            <Button
+              component={Link}
+              to="/"
+              sx={{
+                color:
+                  location.pathname === "/" ? "secondary.main" : "common.white",
+                display: { xs: "none", sm: "inline-flex" },
+              }}
+            >
+              Agenda
+            </Button>
 
-            {user?.role === "ORGANIZER" && (
-              <Button component={Link} to="/organizer/events">
-                Gerenciar eventos
-              </Button>
-            )}
-
-            {user?.role === "GATEKEEPER" && (
-              <Button component={Link} to="/gate">
-                Portaria
+            {accountLink && (
+              <Button
+                component={Link}
+                to={accountLink.to}
+                sx={{
+                  color: location.pathname.startsWith(accountLink.to)
+                    ? "secondary.main"
+                    : "common.white",
+                }}
+              >
+                {accountLink.label}
               </Button>
             )}
 
             {user ? (
               <Button
+                aria-label="Sair"
                 onClick={handleLogout}
                 startIcon={<LogoutIcon />}
+                sx={{ color: "common.white" }}
                 type="button"
               >
-                Sair
+                <Box
+                  component="span"
+                  sx={{ display: { xs: "none", sm: "inline" } }}
+                >
+                  Sair
+                </Box>
               </Button>
             ) : (
-              <Button component={Link} to="/login">
+              <Button
+                component={Link}
+                to="/login"
+                variant="contained"
+                sx={{
+                  bgcolor: "secondary.main",
+                  borderColor: "secondary.main",
+                  color: "secondary.contrastText",
+                  "&:hover": {
+                    bgcolor: "common.white",
+                    borderColor: "common.white",
+                  },
+                }}
+              >
                 Entrar
               </Button>
             )}

@@ -3,8 +3,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  Container,
-  Paper,
   Stack,
   TextField,
   Typography,
@@ -14,6 +12,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { InvalidCredentialsError, login } from "../api/auth";
 import { createReservation } from "../api/reservations";
+import { AccessShell } from "../components/access-shell";
 import {
   clearPendingReservation,
   readPendingReservation,
@@ -105,101 +104,74 @@ export function LoginPage() {
   const registerPath = `/register?returnTo=${encodeURIComponent(returnTo)}`;
 
   return (
-    <Box
-      component="main"
-      sx={{
-        bgcolor: "background.default",
-        display: "grid",
-        minHeight: "100vh",
-        placeItems: "center",
-        py: 6,
-      }}
-    >
-      <Container maxWidth="sm">
-        <Paper
-          elevation={0}
-          square
-          sx={{
-            border: "1px solid",
-            borderColor: "divider",
-            p: { xs: 3, sm: 5 },
-          }}
-        >
-          <Box
-            component="form"
-            onSubmit={(event) => {
-              void handleSubmit(event);
-            }}
-          >
-            <Stack spacing={3}>
-              <Box>
-                <Typography
-                  variant="overline"
-                  sx={{
-                    color: "primary.main",
-                    letterSpacing: "0.16em",
-                  }}
-                >
-                  Plateia
-                </Typography>
+    <AccessShell>
+      <Box
+        component="form"
+        onSubmit={(event) => {
+          void handleSubmit(event);
+        }}
+      >
+        <Stack spacing={3}>
+          <Box sx={{ mb: 1 }}>
+            <Typography sx={{ color: "primary.main", fontWeight: 700 }}>
+              Acesso à Plateia
+            </Typography>
 
-                <Typography component="h1" variant="h3" sx={{ mt: 1 }}>
-                  Entre para continuar
-                </Typography>
+            <Typography component="h1" variant="h3" sx={{ mt: 2 }}>
+              Entre para continuar
+            </Typography>
 
-                <Typography color="text.secondary" sx={{ mt: 2 }}>
-                  Sua seleção está guardada. Entre para reservar os lugares.
-                </Typography>
-              </Box>
-
-              {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
-
-              <TextField
-                autoComplete="email"
-                disabled={isSubmitting}
-                label="E-mail"
-                name="email"
-                required
-                type="email"
-              />
-
-              <TextField
-                autoComplete="current-password"
-                disabled={isSubmitting}
-                label="Senha"
-                name="password"
-                required
-                type="password"
-              />
-
-              <Button
-                disabled={isSubmitting}
-                size="large"
-                type="submit"
-                variant="contained"
-              >
-                {isSubmitting ? (
-                  <>
-                    <CircularProgress
-                      aria-label="Autenticando"
-                      color="inherit"
-                      size={20}
-                      sx={{ mr: 1 }}
-                    />
-                    Entrando
-                  </>
-                ) : (
-                  "Entrar"
-                )}
-              </Button>
-
-              <Button component={Link} to={registerPath} variant="text">
-                Criar uma conta
-              </Button>
-            </Stack>
+            <Typography color="text.secondary" sx={{ maxWidth: 460, mt: 2 }}>
+              Sua seleção está guardada. Entre para reservar os lugares.
+            </Typography>
           </Box>
-        </Paper>
-      </Container>
-    </Box>
+
+          {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
+
+          <TextField
+            autoComplete="email"
+            disabled={isSubmitting}
+            label="E-mail"
+            name="email"
+            required
+            type="email"
+          />
+
+          <TextField
+            autoComplete="current-password"
+            disabled={isSubmitting}
+            label="Senha"
+            name="password"
+            required
+            type="password"
+          />
+
+          <Button
+            disabled={isSubmitting}
+            size="large"
+            type="submit"
+            variant="contained"
+          >
+            {isSubmitting ? (
+              <>
+                <CircularProgress
+                  aria-label="Autenticando"
+                  color="inherit"
+                  size={20}
+                  sx={{ mr: 1 }}
+                />
+                Entrando
+              </>
+            ) : (
+              "Entrar"
+            )}
+          </Button>
+
+          <Button component={Link} to={registerPath} variant="text">
+            Criar uma conta
+          </Button>
+        </Stack>
+      </Box>
+    </AccessShell>
   );
 }
