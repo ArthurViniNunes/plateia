@@ -18,7 +18,9 @@ const app = createApp({
   corsOrigin: env.CORS_ORIGIN,
   jwtSecret: env.JWT_SECRET,
   catalogClient,
-});
+}) as {
+  listen: (port: number, callback: () => void) => unknown;
+};
 
 app.listen(env.PORT, () => {
   console.log(`Plateia API running on port ${env.PORT}`);
