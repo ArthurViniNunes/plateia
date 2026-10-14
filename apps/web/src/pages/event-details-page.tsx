@@ -222,48 +222,84 @@ export function EventDetailsPage() {
         sx={{
           bgcolor: "primary.main",
           color: "primary.contrastText",
-          py: { xs: 5, md: 8 },
+          overflow: "hidden",
         }}
       >
-        <Container maxWidth="lg">
-          <Button
-            component={Link}
-            to="/"
-            startIcon={<ArrowBackIcon />}
-            sx={{
-              color: "secondary.main",
-              mb: 4,
-            }}
-          >
-            Voltar à agenda
-          </Button>
+        <Container
+          maxWidth={false}
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              md: event.imageUrl
+                ? "minmax(0, 1.05fr) minmax(360px, .95fr)"
+                : "1fr",
+            },
+            p: "0 !important",
+          }}
+        >
+          <Box sx={{ p: { xs: 3, sm: 6, md: 8 } }}>
+            <Button
+              component={Link}
+              to="/"
+              startIcon={<ArrowBackIcon />}
+              sx={{
+                color: "common.white",
+                mb: { xs: 5, md: 8 },
+                px: 0,
+              }}
+            >
+              Voltar à agenda
+            </Button>
 
-          <Typography
-            variant="overline"
-            sx={{
-              color: "secondary.main",
-              letterSpacing: "0.16em",
-            }}
-          >
-            {event.classification ?? "Evento"}
-          </Typography>
+            <Typography sx={{ color: "secondary.main", fontWeight: 700 }}>
+              {event.classification ?? "Evento"}
+            </Typography>
 
-          <Typography component="h1" variant="h2" sx={{ mt: 1 }}>
-            {event.title}
-          </Typography>
+            <Typography
+              className="poster-reveal"
+              component="h1"
+              variant="h2"
+              sx={{ maxWidth: 760, mt: 2 }}
+            >
+              {event.title}
+            </Typography>
 
-          <Typography
-            sx={{
-              color: "rgba(255,255,255,0.72)",
-              mt: 2,
-            }}
-          >
-            {dateFormatter.format(new Date(event.startsAt))}
-          </Typography>
+            <Box
+              sx={{
+                borderLeft: "4px solid",
+                borderColor: "secondary.main",
+                mt: 5,
+                pl: 2,
+              }}
+            >
+              <Typography sx={{ fontSize: "1.1rem", fontWeight: 700 }}>
+                {dateFormatter.format(new Date(event.startsAt))}
+              </Typography>
+              <Typography
+                sx={{
+                  color: "rgba(255,255,255,0.76)",
+                  mt: 0.5,
+                }}
+              >
+                {event.venue.name} — {event.venue.city}, {event.venue.state}
+              </Typography>
+            </Box>
+          </Box>
 
-          <Typography sx={{ color: "rgba(255,255,255,0.72)" }}>
-            {event.venue.name} — {event.venue.city}, {event.venue.state}
-          </Typography>
+          {event.imageUrl && (
+            <Box
+              component="img"
+              src={event.imageUrl}
+              alt=""
+              sx={{
+                height: { xs: 300, md: "100%" },
+                minHeight: { md: 520 },
+                objectFit: "cover",
+                width: "100%",
+              }}
+            />
+          )}
         </Container>
       </Box>
 
@@ -284,7 +320,7 @@ export function EventDetailsPage() {
                 Escolha seu lugar
               </Typography>
 
-              <Typography color="text.secondary" sx={{ mt: 1 }}>
+              <Typography color="text.secondary" sx={{ mt: 2 }}>
                 Selecione até quatro assentos para continuar.
               </Typography>
 
@@ -352,10 +388,13 @@ export function EventDetailsPage() {
 
             <Box
               sx={{
-                bgcolor: "primary.main",
-                color: "primary.contrastText",
-                letterSpacing: "0.2em",
-                py: 1.5,
+                bgcolor: "text.primary",
+                clipPath: "polygon(3% 0, 97% 0, 100% 100%, 0 100%)",
+                color: "common.white",
+                fontFamily: '"Archivo Black", sans-serif',
+                letterSpacing: "0.08em",
+                mx: { xs: 1, sm: 6 },
+                py: 2,
                 textAlign: "center",
               }}
             >
@@ -442,12 +481,16 @@ export function EventDetailsPage() {
             component="aside"
             sx={{
               alignSelf: "start",
-              border: "1px solid",
-              borderColor: "divider",
-              p: 3,
+              bgcolor: "secondary.main",
+              border: "2px solid",
+              borderColor: "text.primary",
+              boxShadow: "10px 10px 0 #0a0a0a",
+              p: { xs: 3, md: 4 },
+              position: { md: "sticky" },
+              top: { md: 96 },
             }}
           >
-            <Typography variant="overline">Sua seleção</Typography>
+            <Typography sx={{ fontWeight: 700 }}>Sua seleção</Typography>
 
             <Typography variant="h5" sx={{ mt: 1 }}>
               {selectedSeatIds.length === 0
